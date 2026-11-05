@@ -1,5 +1,6 @@
 package com.example.fileshifter.presentation.corrector
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,38 +8,59 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.example.fileshifter.presentation.common.Aviso
 import com.example.fileshifter.presentation.common.BorradorTexto
+import com.example.fileshifter.presentation.common.BotonPrincipal
+import com.example.fileshifter.presentation.common.BotonSecundario
+import com.example.fileshifter.presentation.common.ContenidoResponsive
 import com.example.fileshifter.presentation.common.PantallaBase
+import com.example.fileshifter.presentation.common.Tarjeta
 import com.example.fileshifter.presentation.common.appViewModel
+import com.example.fileshifter.ui.theme.Amber
+import com.example.fileshifter.ui.theme.AmberBg
+import com.example.fileshifter.ui.theme.AmberText
+import com.example.fileshifter.ui.theme.Background
+import com.example.fileshifter.ui.theme.Border
+import com.example.fileshifter.ui.theme.Primary
+import com.example.fileshifter.ui.theme.TextMuted
+import com.example.fileshifter.ui.theme.TextPrimary
+import com.example.fileshifter.ui.theme.TextSecondary
 
-/** F4 - Corrector ortográfico y gramatical en español (offline). */
+/** F4 - Corrector con la vista del prototipo (P8). */
 @Composable
 fun CorrectorScreen(navController: NavController) {
     val vm: CorrectorViewModel = appViewModel { CorrectorViewModel() }
     val estado by vm.estado.collectAsStateWithLifecycle()
+    val teclado = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
 
     LaunchedEffect(Unit) {
         if (BorradorTexto.texto.isNotBlank()) {
@@ -47,87 +69,162 @@ fun CorrectorScreen(navController: NavController) {
         }
     }
 
-    PantallaBase(titulo = "Corrector", onVolver = { navController.popBackStack() }) { padding ->
-        LazyColumn(
-            modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Aviso("Pega el texto o tráelo del Escáner. El corrector revisa tildes, palabras repetidas y errores frecuentes sin conexión.")
-            }
-            item {
-                OutlinedTextField(
-                    value = estado.texto,
-                    onValueChange = vm::onTextoCambia,
-                    label = { Text("Texto a revisar") },
-                    minLines = 5,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { vm.revisar() }, enabled = estado.texto.isNotBlank()) {
-                        Text("Revisar")
-                    }
-                    OutlinedButton(onClick = { vm.aplicarTodas() }, enabled = estado.sugerencias.isNotEmpty()) {
-                        Text("Aplicar todas")
-                    }
-                    TextButton(onClick = { vm.omitir() }, enabled = estado.sugerencias.isNotEmpty()) {
-                        Text("Omitir")
-                    }
-                }
-            }
+    PantallaBase(titulo = "Corrector ortográfico", onVolver = { navController.popBackStack() }) { padding ->
+        Column(Modifier.padding(padding).fillMaxSize()) {
             if (estado.revisado) {
-                item {
+                Surface(color = AmberBg) {
+                    val mensaje = if (estado.sugerencias.isEmpty()) {
+                        "Sin errores detectados"
+                    } else {
+                        "${estado.sugerencias.size} errores detectados"
+                    }
                     Text(
-                        if (estado.sugerencias.isEmpty()) "Sin errores detectados."
-                        else "${estado.sugerencias.size} sugerencia(s). Toca una para aplicarla.",
-                        style = MaterialTheme.typography.titleSmall
+                        text = buildAnnotatedString {
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(mensaje) }
+                            if (estado.sugerencias.isNotEmpty()) {
+                                append("  ·  Toca una palabra subrayada para corregir")
+                            }
+                        },
+                        color = AmberText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)
                     )
                 }
-                if (estado.sugerencias.isNotEmpty()) {
-                    item {
-                        val colorError = MaterialTheme.colorScheme.error
-                        val anotado = buildAnnotatedString {
-                            append(estado.texto)
-                            estado.sugerencias.forEach { sugerencia ->
-                                if (sugerencia.fin <= estado.texto.length) {
-                                    addStyle(
-                                        SpanStyle(
-                                            color = colorError,
-                                            textDecoration = TextDecoration.Underline
-                                        ),
-                                        sugerencia.inicio,
-                                        sugerencia.fin
-                                    )
+            }
+
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                ContenidoResponsive {
+                    Column(Modifier.padding(16.dp)) {
+                        Tarjeta(padding = 12.dp) {
+                            OutlinedTextField(
+                                value = estado.texto,
+                                onValueChange = vm::onTextoCambia,
+                                label = { Text("Texto a revisar") },
+                                minLines = 3,
+                                keyboardOptions = KeyboardOptions(
+                                    capitalization = KeyboardCapitalization.Sentences
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = {
+                                    teclado?.hide()
+                                    vm.revisar()
+                                }, enabled = estado.texto.isNotBlank()) {
+                                    Text("Revisar", color = Primary)
+                                }
+                                TextButton(
+                                    onClick = {
+                                        teclado?.hide()
+                                        vm.aplicarTodas()
+                                    },
+                                    enabled = estado.sugerencias.isNotEmpty()
+                                ) {
+                                    Text("Aplicar todas", color = Primary)
                                 }
                             }
                         }
-                        Card(Modifier.fillMaxWidth()) {
-                            Text(
-                                anotado,
-                                Modifier.padding(12.dp).height(140.dp).verticalScroll(rememberScrollState()),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                    items(estado.sugerencias) { sugerencia ->
-                        Card(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(10.dp)) {
+
+                        if (estado.texto.isNotBlank()) {
+                            Spacer(Modifier.height(12.dp))
+                            Tarjeta {
                                 Text(
-                                    "${sugerencia.original} → ${sugerencia.correccion.ifBlank { "(eliminar)" }}",
-                                    style = MaterialTheme.typography.bodyLarge
+                                    "PÁRRAFO 1 DE ${estado.texto.split("\n\n").size.coerceAtLeast(1)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextMuted
                                 )
+                                Spacer(Modifier.height(10.dp))
+                                val texto = estado.texto
+                                val anotado = buildAnnotatedString {
+                                    append(texto)
+                                    estado.sugerencias.forEach { sugerencia ->
+                                        if (sugerencia.fin <= texto.length && sugerencia.inicio < sugerencia.fin) {
+                                            addStyle(
+                                                SpanStyle(
+                                                    color = AmberText,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    textDecoration = TextDecoration.Underline
+                                                ),
+                                                sugerencia.inicio,
+                                                sugerencia.fin
+                                            )
+                                        }
+                                    }
+                                }
                                 Text(
-                                    sugerencia.motivo,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    anotado,
+                                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
                                 )
-                                Spacer(Modifier.height(4.dp))
-                                TextButton(onClick = { vm.aplicarUna(sugerencia) }) { Text("Aplicar") }
                             }
                         }
+
+                        if (estado.sugerencias.isNotEmpty()) {
+                            Spacer(Modifier.height(12.dp))
+                            Tarjeta(padding = 0.dp) {
+                                Text(
+                                    "Resumen de errores",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = TextPrimary,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                                )
+                                HorizontalDivider(color = Border)
+                                estado.sugerencias.forEachIndexed { indice, sugerencia ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        androidx.compose.foundation.layout.Box(
+                                            Modifier.size(8.dp)
+                                                .background(Amber, CircleShape)
+                                        )
+                                        Spacer(Modifier.width(10.dp))
+                                        Column(Modifier.weight(1f)) {
+                                            Text(
+                                                sugerencia.original,
+                                                style = MaterialTheme.typography.titleSmall,
+                                                color = TextPrimary
+                                            )
+                                            Text(
+                                                "→ ${sugerencia.correccion.ifBlank { "(eliminar)" }}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = TextMuted
+                                            )
+                                        }
+                                        TextButton(onClick = { vm.aplicarUna(sugerencia) }) {
+                                            Text("Corregir", color = Primary)
+                                        }
+                                    }
+                                    if (indice < estado.sugerencias.lastIndex) {
+                                        HorizontalDivider(color = Border)
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(16.dp))
                     }
+                }
+            }
+
+            Surface(color = Background) {
+                Row(
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    BotonSecundario(
+                        texto = "Omitir",
+                        modifier = Modifier.weight(1f),
+                        onClick = { vm.omitir() }
+                    )
+                    BotonPrincipal(
+                        texto = "Aplicar",
+                        modifier = Modifier.weight(1.6f),
+                        enabled = estado.sugerencias.isNotEmpty(),
+                        onClick = { vm.aplicarTodas() }
+                    )
                 }
             }
         }

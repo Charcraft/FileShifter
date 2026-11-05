@@ -15,7 +15,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,66 +25,86 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
-import java.io.File
+import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
-/** Vista de cámara con botón Capturar (para el Escáner). */
+/**
+ * Vista de cámara que entrega el [ImageCapture] listo para tomar fotos.
+ * La pantalla decide dónde poner los controles.
+ */
+@Composable
+fun CamaraPreview(
+    modifier: Modifier = Modifier,
+    onCamaraLista: (ImageCapture, androidx.camera.core.Camera) -> Unit
+) {
+    val ciclo = LocalLifecycleOwner.current
+
+    AndroidView(
+        factory = { ctx ->
+            PreviewView(ctx).also { vista ->
+                val futuro = ProcessCameraProvider.getInstance(ctx)
+                futuro.addListener({
+                    runCatching {
+                        val proveedor = futuro.get()
+                        val preview = Preview.Builder().build().apply {
+                            setSurfaceProvider(vista.surfaceProvider)
+                        }
+                        val captura = ImageCapture.Builder()
+                            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                            .build()
+                        proveedor.unbindAll()
+                        val camara = proveedor.bindToLifecycle(
+                            ciclo,
+                            CameraSelector.DEFAULT_BACK_CAMERA,
+                            preview,
+                            captura
+                        )
+                        onCamaraLista(captura, camara)
+                    }
+                }, ContextCompat.getMainExecutor(ctx))
+            }
+        },
+        modifier = modifier
+    )
+}
+
+/** Toma una foto y la entrega como archivo temporal. */
+fun tomarFoto(
+    captura: ImageCapture,
+    ejecutor: Executor,
+    archivo: java.io.File,
+    onFoto: (java.io.File) -> Unit
+) {
+    val opciones = ImageCapture.OutputFileOptions.Builder(archivo).build()
+    captura.takePicture(
+        opciones,
+        ejecutor,
+        object : ImageCapture.OnImageSavedCallback {
+            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) = onFoto(archivo)
+            override fun onError(exception: ImageCaptureException) = Unit
+        }
+    )
+}
+
+/** Vista de cámara con botón Capturar (para pantallas simples). */
 @Composable
 fun CamaraCaptura(
     modifier: Modifier = Modifier,
-    onCaptura: (File) -> Unit
+    onCaptura: (java.io.File) -> Unit
 ) {
     val contexto = LocalContext.current
-    val ciclo = LocalLifecycleOwner.current
     val ejecutor = remember { Executors.newSingleThreadExecutor() }
-    val capturador = remember { mutableStateOf<ImageCapture?>(null) }
+    val capturador = remember { androidx.compose.runtime.mutableStateOf<ImageCapture?>(null) }
 
     DisposableEffect(Unit) { onDispose { ejecutor.shutdown() } }
 
     Box(modifier) {
-        AndroidView(
-            factory = { ctx ->
-                PreviewView(ctx).also { vista ->
-                    val futuro = ProcessCameraProvider.getInstance(ctx)
-                    futuro.addListener({
-                        runCatching {
-                            val proveedor = futuro.get()
-                            val preview = Preview.Builder().build().apply {
-                                setSurfaceProvider(vista.surfaceProvider)
-                            }
-                            val captura = ImageCapture.Builder()
-                                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                                .build()
-                            capturador.value = captura
-                            proveedor.unbindAll()
-                            proveedor.bindToLifecycle(
-                                ciclo,
-                                CameraSelector.DEFAULT_BACK_CAMERA,
-                                preview,
-                                captura
-                            )
-                        }
-                    }, ContextCompat.getMainExecutor(ctx))
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+        CamaraPreview(Modifier.fillMaxSize()) { captura, _ -> capturador.value = captura }
         Button(
             onClick = {
                 val captura = capturador.value ?: return@Button
-                val archivo = File(contexto.cacheDir, "captura_${System.currentTimeMillis()}.jpg")
-                val opciones = ImageCapture.OutputFileOptions.Builder(archivo).build()
-                captura.takePicture(
-                    opciones,
-                    ejecutor,
-                    object : ImageCapture.OnImageSavedCallback {
-                        override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                            onCaptura(archivo)
-                        }
-
-                        override fun onError(exception: ImageCaptureException) = Unit
-                    }
-                )
+                val archivo = java.io.File(contexto.cacheDir, "captura_${System.currentTimeMillis()}.jpg")
+                tomarFoto(captura, ejecutor, archivo, onCaptura)
             },
             modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
         ) { Text("Capturar") }

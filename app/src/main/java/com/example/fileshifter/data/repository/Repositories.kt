@@ -61,12 +61,13 @@ class HistorialRepository(private val dao: HistorialDao) {
  */
 interface DocumentoRepository {
     suspend fun describir(uris: List<String>): List<ArchivoSeleccionado>
-    suspend fun imagenesAPdf(uris: List<String>, unir: Boolean): ResultadoConversion
+    suspend fun imagenesAPdf(uris: List<String>, unir: Boolean, calidad: Int): ResultadoConversion
     suspend fun convertir(archivos: List<ArchivoSeleccionado>, objetivo: FormatoSalida): ResultadoConversion
     suspend fun editarPdf(tipo: TipoEdicion, uris: List<String>, opciones: OpcionesEdicion): ResultadoConversion
     suspend fun crearEntregaPdf(plantilla: PlantillaEntrega, datos: DatosEntrega): ResultadoConversion
     suspend fun validar(archivo: ArchivoSeleccionado): ReporteValidacion
     suspend fun textoDe(archivo: ArchivoSeleccionado): String
+    suspend fun copiarTemporal(uri: String, nombre: String): File
     suspend fun textoAPdf(texto: String, titulo: String): ResultadoConversion
     suspend fun generarCodigo(texto: String, esQr: Boolean): File
 }
@@ -85,7 +86,7 @@ class DocumentoRepositoryImpl(
             uris.map { Archivos.describir(context, Uri.parse(it)) }
         }
 
-    override suspend fun imagenesAPdf(uris: List<String>, unir: Boolean): ResultadoConversion =
+    override suspend fun imagenesAPdf(uris: List<String>, unir: Boolean, calidad: Int): ResultadoConversion =
         withContext(Dispatchers.IO) {
             runCatching {
                 val carpeta = Archivos.carpetaSalida(context)
@@ -95,7 +96,8 @@ class DocumentoRepositoryImpl(
                     uris = uris.map(Uri::parse),
                     unir = unir,
                     carpeta = carpeta,
-                    base = base
+                    base = base,
+                    calidad = calidad
                 )
                 registrarTodo(generados, "Imagen a PDF")
                 ResultadoConversion(
@@ -126,7 +128,7 @@ class DocumentoRepositoryImpl(
                     FormatoSalida.PDF -> when (archivo.tipo) {
                         TipoDocumento.IMAGEN -> {
                             generados += PdfEngine.imagenesAPdf(
-                                context, listOf(uri), false, carpeta, base
+                                context, listOf(uri), false, carpeta, base, 2
                             )
                         }
                         TipoDocumento.PDF -> Unit
@@ -292,8 +294,12 @@ class DocumentoRepositoryImpl(
             }
         }
 
-    override suspend fun textoAPdf(texto: String, titulo: String): ResultadoConversion =
+    override suspend fun copiarTemporal(uri: String, nombre: String): File =
         withContext(Dispatchers.IO) {
+            Archivos.temporal(context, Uri.parse(uri), nombre)
+        }
+
+    override suspend fun textoAPdf(texto: String, titulo: String): ResultadoConversion =        withContext(Dispatchers.IO) {
             runCatching {
                 if (texto.isBlank()) error("No hay texto para convertir")
                 val carpeta = Archivos.carpetaSalida(context)

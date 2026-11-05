@@ -81,6 +81,24 @@ Documento completo: **[docs/ARQUITECTURA_MVVM.md](docs/ARQUITECTURA_MVVM.md)**.
 
 ---
 
+## Interfaz
+
+La app reproduce el prototipo de Figma (`https://input-chop-13093493.figma.site`):
+
+- Barra superior azul marino con el logotipo y el botón de regreso cuadrado.
+- Franjas informativas celestes, tarjetas blancas con borde suave y chips de icono.
+- Pantalla de bienvenida (splash) con el logotipo, tres beneficios y botón **Comenzar**.
+- Pasos numerados en Editar PDF y Modo Entrega; pestañas en QR.
+- **Pantalla completa real (edge-to-edge)**: la app dibuja detrás de la barra de
+  estado y de navegación, con insets correctos en notch, gestos y landscape.
+- Rejilla adaptativa (2 o 3 columnas según el ancho) y contenido centrado con
+  ancho máximo de 620 dp en tablets y plegables.
+- **Icono de la app** con el logotipo: adaptive icon (fondo azul marino + tarjeta
+  blanca con el documento), PNG para Android 7 y variante monocromática para
+  iconos temáticos.
+
+---
+
 ## Compilar y ejecutar
 
 Requisitos: Android Studio, Android SDK 35, **JDK 21 para Gradle**.

@@ -1,38 +1,62 @@
 package com.example.fileshifter.presentation.delivery
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.fileshifter.data.model.PlantillaEntrega
 import com.example.fileshifter.navigation.Screen
-import com.example.fileshifter.presentation.common.Aviso
+import com.example.fileshifter.presentation.common.BotonPrincipal
+import com.example.fileshifter.presentation.common.ContenidoResponsive
 import com.example.fileshifter.presentation.common.PantallaBase
+import com.example.fileshifter.presentation.common.Pasos
+import com.example.fileshifter.presentation.common.Tarjeta
 import com.example.fileshifter.presentation.common.TarjetaResultado
 import com.example.fileshifter.presentation.common.appViewModel
+import com.example.fileshifter.ui.theme.Background
+import com.example.fileshifter.ui.theme.Border
+import com.example.fileshifter.ui.theme.Navy
+import com.example.fileshifter.ui.theme.Primary
+import com.example.fileshifter.ui.theme.PrimaryLight
+import com.example.fileshifter.ui.theme.Surface
+import com.example.fileshifter.ui.theme.SurfaceMuted
+import com.example.fileshifter.ui.theme.TextMuted
+import com.example.fileshifter.ui.theme.TextPrimary
+import com.example.fileshifter.ui.theme.TextSecondary
 
-/** ViewModel compartido del grafo delivery_flow. */
 @Composable
 private fun deliveryViewModel(navController: NavController): DeliveryViewModel {
     val padre = remember(navController) { navController.getBackStackEntry(Screen.DeliveryGraph.route) }
@@ -46,43 +70,133 @@ fun DeliveryStep1Screen(navController: NavController) {
     val vm = deliveryViewModel(navController)
     val estado by vm.estado.collectAsStateWithLifecycle()
 
-    PantallaBase(titulo = "Modo Entrega · Paso 1", onVolver = { navController.popBackStack() }) { padding ->
-        LazyColumn(
-            modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            item { Aviso("Elige plantilla. El paso 2 pide tus datos y el 3 muestra la vista previa antes de generar el PDF.") }
-            items(PlantillaEntrega.entries.toList()) { plantilla ->
-                Card(
-                    onClick = {
-                        vm.onPlantilla(plantilla)
-                        navController.navigate(Screen.Delivery2.route)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (estado.plantilla == plantilla) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surface
-                        }
-                    )
-                ) {
-                    Column(Modifier.padding(14.dp)) {
-                        Text(plantilla.etiqueta, style = MaterialTheme.typography.titleMedium)
+    PantallaBase(titulo = "Modo Entrega", onVolver = { navController.popBackStack() }) { padding ->
+        Column(Modifier.padding(padding).fillMaxSize()) {
+            Pasos(listOf("Plantilla", "Datos", "Vista previa"), actual = 1)
+
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                ContenidoResponsive {
+                    Column(Modifier.padding(16.dp)) {
                         Text(
-                            plantilla.descripcion,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            "Elige una plantilla de portada para el documento.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
                         )
+                        Spacer(Modifier.height(14.dp))
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            PlantillaEntrega.entries.forEach { plantilla ->
+                                MiniPlantilla(
+                                    plantilla = plantilla,
+                                    seleccionada = estado.plantilla == plantilla,
+                                    modifier = Modifier.weight(1f)
+                                ) { vm.onPlantilla(plantilla) }
+                            }
+                        }
+
+                        Spacer(Modifier.height(14.dp))
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .drawBehind {
+                                    drawRoundRect(
+                                        color = Border,
+                                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()),
+                                        style = Stroke(
+                                            width = 1.5.dp.toPx(),
+                                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 10f))
+                                        )
+                                    )
+                                },
+                            color = Color.Transparent
+                        ) {
+                            Text(
+                                "+   Importar mi plantilla (.docx / .pdf)",
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                textAlign = TextAlign.Center,
+                                color = TextMuted,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+
+                        Spacer(Modifier.height(16.dp))
                     }
                 }
             }
-            item {
-                Button(
-                    onClick = { navController.navigate(Screen.Delivery2.route) },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("Siguiente") }
+
+            Surface(color = Background) {
+                Column(Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    BotonPrincipal(texto = "Siguiente — Datos  ›") {
+                        navController.navigate(Screen.Delivery2.route)
+                    }
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun MiniPlantilla(
+    plantilla: PlantillaEntrega,
+    seleccionada: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val colorCabecera = when (plantilla) {
+        PlantillaEntrega.ESCOLAR -> Primary
+        PlantillaEntrega.OFICIO -> Navy
+        PlantillaEntrega.MINIMAL -> Color(0xFFE8EDF2)
+    }
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        color = if (seleccionada) PrimaryLight else Surface,
+        border = BorderStroke(if (seleccionada) 1.5.dp else 1.dp, if (seleccionada) Primary else Border)
+    ) {
+        Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(86.dp)
+                    .background(Surface, RoundedCornerShape(8.dp))
+            ) {
+                Column(Modifier.fillMaxSize()) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(26.dp)
+                            .background(colorCabecera, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                    )
+                    Column(Modifier.padding(8.dp)) {
+                        Box(Modifier.fillMaxWidth(0.7f).height(5.dp).background(Border, RoundedCornerShape(3.dp)))
+                        Spacer(Modifier.height(5.dp))
+                        Box(Modifier.fillMaxWidth(0.9f).height(4.dp).background(SurfaceMuted, RoundedCornerShape(3.dp)))
+                        Spacer(Modifier.height(4.dp))
+                        Box(Modifier.fillMaxWidth(0.8f).height(4.dp).background(SurfaceMuted, RoundedCornerShape(3.dp)))
+                        Spacer(Modifier.height(4.dp))
+                        Box(Modifier.fillMaxWidth(0.6f).height(4.dp).background(SurfaceMuted, RoundedCornerShape(3.dp)))
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                plantilla.etiqueta,
+                style = MaterialTheme.typography.titleSmall,
+                color = if (seleccionada) Primary else TextPrimary,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                when (plantilla) {
+                    PlantillaEntrega.ESCOLAR -> "Universidad / Instituto"
+                    PlantillaEntrega.OFICIO -> "Formal / Empresa"
+                    PlantillaEntrega.MINIMAL -> "Sin encabezado"
+                },
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                color = TextMuted,
+                textAlign = TextAlign.Center,
+                maxLines = 2
+            )
         }
     }
 }
@@ -95,62 +209,57 @@ fun DeliveryStep2Screen(navController: NavController) {
     val estado by vm.estado.collectAsStateWithLifecycle()
     val datos = estado.datos
 
-    PantallaBase(titulo = "Modo Entrega · Paso 2", onVolver = { navController.popBackStack() }) { padding ->
-        LazyColumn(
-            modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            item { Aviso("Plantilla elegida: ${estado.plantilla.etiqueta}") }
-            item {
-                OutlinedTextField(
-                    value = datos.nombre,
-                    onValueChange = vm::onNombre,
-                    label = { Text("Nombre completo *") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+    PantallaBase(titulo = "Datos de la entrega", onVolver = { navController.popBackStack() }) { padding ->
+        Column(Modifier.padding(padding).fillMaxSize()) {
+            Pasos(listOf("Plantilla", "Datos", "Vista previa"), actual = 2)
+
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                ContenidoResponsive {
+                    Column(Modifier.padding(16.dp)) {
+                        Tarjeta {
+                            Campo("Nombre completo *", datos.nombre, vm::onNombre)
+                            Spacer(Modifier.height(10.dp))
+                            Campo("Matrícula", datos.matricula, vm::onMatricula)
+                            Spacer(Modifier.height(10.dp))
+                            Campo("Materia", datos.materia, vm::onMateria)
+                            Spacer(Modifier.height(10.dp))
+                            Campo("Título del trabajo *", datos.titulo, vm::onTitulo)
+                            Spacer(Modifier.height(10.dp))
+                            androidx.compose.material3.OutlinedTextField(
+                                value = datos.indice,
+                                onValueChange = vm::onIndice,
+                                label = { Text("Índice (una línea por punto)") },
+                                minLines = 4,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        Spacer(Modifier.height(16.dp))
+                    }
+                }
             }
-            item {
-                OutlinedTextField(
-                    value = datos.matricula,
-                    onValueChange = vm::onMatricula,
-                    label = { Text("Matrícula") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = datos.materia,
-                    onValueChange = vm::onMateria,
-                    label = { Text("Materia") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = datos.titulo,
-                    onValueChange = vm::onTitulo,
-                    label = { Text("Título del trabajo *") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = datos.indice,
-                    onValueChange = vm::onIndice,
-                    label = { Text("Índice (una línea por punto)") },
-                    minLines = 4,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            item {
-                Button(
-                    onClick = { navController.navigate(Screen.Delivery3.route) },
-                    enabled = estado.formularioValido,
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("Siguiente") }
+
+            Surface(color = Background) {
+                Column(Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    BotonPrincipal(
+                        texto = "Siguiente — Vista previa  ›",
+                        enabled = estado.formularioValido,
+                        onClick = { navController.navigate(Screen.Delivery3.route) }
+                    )
+                }
             }
         }
     }
+}
+
+@Composable
+private fun Campo(etiqueta: String, valor: String, onCambia: (String) -> Unit) {
+    androidx.compose.material3.OutlinedTextField(
+        value = valor,
+        onValueChange = onCambia,
+        label = { Text(etiqueta) },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 // ------------------------------------------------------------------ Paso 3
@@ -161,66 +270,82 @@ fun DeliveryStep3Screen(navController: NavController) {
     val estado by vm.estado.collectAsStateWithLifecycle()
     val datos = estado.datos
 
-    PantallaBase(titulo = "Modo Entrega · Paso 3", onVolver = { navController.popBackStack() }) { padding ->
-        LazyColumn(
-            modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Card(Modifier.fillMaxWidth()) {
+    PantallaBase(titulo = "Vista previa", onVolver = { navController.popBackStack() }) { padding ->
+        Column(Modifier.padding(padding).fillMaxSize()) {
+            Pasos(listOf("Plantilla", "Datos", "Vista previa"), actual = 3)
+
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                ContenidoResponsive {
                     Column(Modifier.padding(16.dp)) {
-                        Text(
-                            datos.materia.ifBlank { "Materia" },
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            datos.titulo.ifBlank { "Título del trabajo" },
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Text("Alumno: ${datos.nombre}", style = MaterialTheme.typography.bodyMedium)
-                        Text("Matrícula: ${datos.matricula}", style = MaterialTheme.typography.bodyMedium)
-                        Spacer(Modifier.height(12.dp))
-                        HorizontalDivider()
-                        Spacer(Modifier.height(12.dp))
-                        Text("Índice", style = MaterialTheme.typography.titleSmall)
-                        datos.indice.split("\n").filter { it.isNotBlank() }.forEach { linea ->
-                            Text("• $linea", style = MaterialTheme.typography.bodySmall)
+                        Tarjeta(padding = 0.dp) {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(10.dp)
+                                    .background(if (estado.plantilla == PlantillaEntrega.OFICIO) Navy else Primary)
+                            )
+                            Column(Modifier.padding(20.dp)) {
+                                Text(
+                                    datos.materia.ifBlank { "Materia" },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = Primary
+                                )
+                                Spacer(Modifier.height(14.dp))
+                                Text(
+                                    datos.titulo.ifBlank { "Título del trabajo" },
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    color = TextPrimary
+                                )
+                                Spacer(Modifier.height(18.dp))
+                                Text("Alumno", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                                Text(datos.nombre, style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
+                                Spacer(Modifier.height(6.dp))
+                                Text("Matrícula", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                                Text(datos.matricula, style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
+                                if (datos.indice.isNotBlank()) {
+                                    Spacer(Modifier.height(18.dp))
+                                    HorizontalDivider(color = Border)
+                                    Spacer(Modifier.height(12.dp))
+                                    Text("Índice", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                                    Spacer(Modifier.height(6.dp))
+                                    datos.indice.split("\n").filter { it.isNotBlank() }.forEach { linea ->
+                                        Text("• $linea", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                    }
+                                }
+                                Spacer(Modifier.height(18.dp))
+                                Text(
+                                    "Plantilla: ${estado.plantilla.etiqueta}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextMuted
+                                )
+                            }
+                        }
+
+                        if (estado.cargando) {
+                            Spacer(Modifier.height(12.dp))
+                            LinearProgressIndicator(Modifier.fillMaxWidth())
+                        }
+
+                        estado.resultado?.let {
+                            Spacer(Modifier.height(12.dp))
+                            TarjetaResultado(
+                                resultado = it,
+                                onValidar = { navController.navigate(Screen.Validator.route) },
+                                onInicio = { navController.navigate(Screen.Home.route) }
+                            )
                         }
                         Spacer(Modifier.height(16.dp))
-                        Text(
-                            "Plantilla: ${estado.plantilla.etiqueta}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
             }
-            item {
-                Button(
-                    onClick = { vm.generar() },
-                    enabled = !estado.cargando,
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text(if (estado.cargando) "Generando..." else "Generar PDF") }
-                if (estado.cargando) {
-                    Spacer(Modifier.height(8.dp))
-                    LinearProgressIndicator(Modifier.fillMaxWidth())
-                }
-            }
-            estado.resultado?.let { resultado ->
-                item {
-                    TarjetaResultado(
-                        resultado = resultado,
-                        onValidar = { navController.navigate(Screen.Validator.route) },
-                        onInicio = { navController.navigate(Screen.Home.route) }
+
+            Surface(color = Background) {
+                Column(Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    BotonPrincipal(
+                        texto = if (estado.cargando) "Generando…" else "Generar PDF",
+                        enabled = !estado.cargando,
+                        onClick = { vm.generar() }
                     )
-                }
-            }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Vista previa paginada lista para generar.", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }

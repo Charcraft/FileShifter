@@ -42,6 +42,12 @@ class EditFlowViewModel(private val repositorio: DocumentoRepository) : ViewMode
         _estado.update { it.copy(tipo = tipo, resultado = null) }
     }
 
+    fun quitar(uri: String) {
+        _estado.update { estado ->
+            estado.copy(archivos = estado.archivos.filterNot { it.uri == uri })
+        }
+    }
+
     fun onGrados(grados: Int) {
         _estado.update { it.copy(opciones = it.opciones.copy(grados = grados)) }
     }

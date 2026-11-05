@@ -21,10 +21,12 @@ import com.example.fileshifter.presentation.image.ImageToPdfScreen
 import com.example.fileshifter.presentation.qr.QrScreen
 import com.example.fileshifter.presentation.scanner.ScannerScreen
 import com.example.fileshifter.presentation.settings.SettingsScreen
+import com.example.fileshifter.presentation.splash.SplashScreen
 import com.example.fileshifter.presentation.validator.ValidatorScreen
 
 /** Rutas de navegación de la app (una sola Activity, pila de navegación). */
 sealed class Screen(val route: String, val label: String) {
+    data object Splash : Screen("splash", "Bienvenida")
     data object Home : Screen("home", "Inicio")
     data object Convert : Screen("convert", "Convertir")
     data object Image : Screen("image", "Imagen")
@@ -48,7 +50,7 @@ sealed class Screen(val route: String, val label: String) {
 fun AppNav(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Home.route,
+        startDestination = Screen.Splash.route,
         enterTransition = {
             slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
         },
@@ -62,6 +64,7 @@ fun AppNav(navController: NavHostController) {
             slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
         }
     ) {
+        composable(Screen.Splash.route) { SplashScreen(navController) }
         composable(Screen.Home.route) { HomeScreen(navController) }
         composable(Screen.Convert.route) { ConvertScreen(navController) }
         composable(Screen.Image.route) { ImageToPdfScreen(navController) }

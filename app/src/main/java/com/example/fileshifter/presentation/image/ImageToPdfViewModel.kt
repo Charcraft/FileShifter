@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 data class ImageToPdfUiState(
     val imagenes: List<ArchivoSeleccionado> = emptyList(),
     val unir: Boolean = true,
+    val calidad: Int = 1,
     val cargando: Boolean = false,
     val resultado: ResultadoConversion? = null
 )
@@ -35,12 +36,22 @@ class ImageToPdfViewModel(private val repositorio: DocumentoRepository) : ViewMo
         _estado.update { it.copy(unir = valor) }
     }
 
+    fun onCalidad(valor: Int) {
+        _estado.update { it.copy(calidad = valor) }
+    }
+
+    fun quitar(uri: String) {
+        _estado.update { estado ->
+            estado.copy(imagenes = estado.imagenes.filterNot { it.uri == uri })
+        }
+    }
+
     fun convertir() {
         val actual = _estado.value
         if (actual.imagenes.isEmpty() || actual.cargando) return
         viewModelScope.launch {
             _estado.update { it.copy(cargando = true, resultado = null) }
-            val resultado = repositorio.imagenesAPdf(actual.imagenes.map { it.uri }, actual.unir)
+            val resultado = repositorio.imagenesAPdf(actual.imagenes.map { it.uri }, actual.unir, actual.calidad)
             _estado.update { it.copy(cargando = false, resultado = resultado) }
         }
     }

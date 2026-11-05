@@ -17,12 +17,24 @@ import kotlin.coroutines.resumeWithException
 class OcrService(private val context: Context) {
 
     private val cliente = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private val lector = com.google.mlkit.vision.barcode.BarcodeScanning.getClient()
 
     suspend fun reconocer(archivo: File): String {
         val bitmap = BitmapFactory.decodeFile(archivo.absolutePath) ?: return ""
         return try {
             val imagen = InputImage.fromBitmap(bitmap, 0)
             cliente.process(imagen).esperar().text
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    /** Lee un QR o código de barras desde una imagen de la galería. */
+    suspend fun leerCodigo(archivo: File): String? {
+        val bitmap = BitmapFactory.decodeFile(archivo.absolutePath) ?: return null
+        return try {
+            lector.process(InputImage.fromBitmap(bitmap, 0)).esperar()
+                .firstOrNull()?.rawValue
         } finally {
             bitmap.recycle()
         }

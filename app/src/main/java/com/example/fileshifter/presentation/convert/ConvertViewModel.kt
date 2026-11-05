@@ -46,6 +46,12 @@ class ConvertViewModel(private val repositorio: DocumentoRepository) : ViewModel
         _estado.update { it.copy(objetivo = formato) }
     }
 
+    fun quitar(uri: String) {
+        _estado.update { estado ->
+            estado.copy(archivos = estado.archivos.filterNot { it.uri == uri })
+        }
+    }
+
     fun convertir() {
         val actual = _estado.value
         val objetivo = actual.objetivo ?: return

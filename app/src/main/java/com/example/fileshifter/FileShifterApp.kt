@@ -8,7 +8,9 @@ import com.example.fileshifter.data.repository.DocumentoRepository
 import com.example.fileshifter.data.repository.DocumentoRepositoryImpl
 import com.example.fileshifter.data.repository.HistorialRepository
 import com.example.fileshifter.data.source.OcrService
+import com.example.fileshifter.data.source.Archivos
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import java.io.File
 
 /**
  * Application: crea el contenedor de dependencias una sola vez.
@@ -31,6 +33,7 @@ class AppContainer(context: Context) {
 
     private val baseDatos = AppDatabase.obtener(context)
 
+    val carpetaSalida: File = Archivos.carpetaSalida(context)
     val historialRepository: HistorialRepository = HistorialRepository(baseDatos.historialDao())
     val ajustesRepository: AjustesRepository = AjustesRepository(context)
     val documentoRepository: DocumentoRepository =

@@ -1,6 +1,8 @@
 package com.example.fileshifter.presentation.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,96 +10,231 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Spellcheck
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.example.fileshifter.presentation.common.Aviso
+import com.example.fileshifter.data.model.formatearTamano
+import com.example.fileshifter.presentation.common.BotonSecundario
+import com.example.fileshifter.presentation.common.ChipIcono
+import com.example.fileshifter.presentation.common.ContenidoResponsive
 import com.example.fileshifter.presentation.common.PantallaBase
+import com.example.fileshifter.presentation.common.Tarjeta
 import com.example.fileshifter.presentation.common.appViewModel
+import com.example.fileshifter.ui.theme.Border
+import com.example.fileshifter.ui.theme.Primary
+import com.example.fileshifter.ui.theme.PrimaryLight
+import com.example.fileshifter.ui.theme.TextMuted
+import com.example.fileshifter.ui.theme.TextPrimary
+import com.example.fileshifter.ui.theme.TextSecondary
 
-/** Ajustes: qué pasos opcionales sugiere el flujo. */
+/** Ajustes con las secciones del prototipo (P14). */
 @Composable
 fun SettingsScreen(navController: NavController) {
-    val vm: SettingsViewModel = appViewModel { SettingsViewModel(it.ajustesRepository) }
+    val vm: SettingsViewModel = appViewModel {
+        SettingsViewModel(it.ajustesRepository, it.historialRepository, it.carpetaSalida)
+    }
     val ajustes by vm.ajustes.collectAsStateWithLifecycle()
+    val almacenamiento by vm.almacenamiento.collectAsStateWithLifecycle()
+    var confirmar by remember { mutableStateOf(false) }
+
+    val limite = 200L * 1024L * 1024L
+    val porcentaje = (almacenamiento.toFloat() / limite).coerceIn(0f, 1f)
 
     PantallaBase(titulo = "Ajustes", onVolver = { navController.popBackStack() }) { padding ->
         Column(
-            modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize().verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())
         ) {
-            Aviso("Cada función trabaja sola. Aquí decides qué pasos opcionales se sugieren al terminar una conversión.")
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp)) {
-                    FilaAjuste(
-                        titulo = "Sugerir Corrector",
-                        detalle = "Al terminar, ofrece revisar la ortografía",
-                        valor = ajustes.sugerirCorrector,
-                        onCambia = vm::setSugerirCorrector
+            ContenidoResponsive {
+                Column(Modifier.padding(16.dp)) {
+
+                    Text("Pipeline de procesamiento", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+                    Text(
+                        "Controla qué pasos se sugieren al convertir o escanear.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
                     )
-                    FilaAjuste(
-                        titulo = "Sugerir Modo Entrega",
-                        detalle = "Al terminar, ofrece generar una portada",
-                        valor = ajustes.sugerirEntrega,
-                        onCambia = vm::setSugerirEntrega
+                    Spacer(Modifier.height(10.dp))
+
+                    Tarjeta(padding = 0.dp) {
+                        FilaAjuste(
+                            icono = Icons.Filled.Spellcheck,
+                            titulo = "Sugerir Corrector ortográfico",
+                            detalle = "Proponer revisión al finalizar la conversión",
+                            valor = ajustes.sugerirCorrector,
+                            onCambia = vm::setSugerirCorrector
+                        )
+                        HorizontalDivider(color = Border)
+                        FilaAjuste(
+                            icono = Icons.Filled.Person,
+                            titulo = "Sugerir Modo Entrega",
+                            detalle = "Proponer plantilla académica u oficina",
+                            valor = ajustes.sugerirEntrega,
+                            onCambia = vm::setSugerirEntrega
+                        )
+                        HorizontalDivider(color = Border)
+                        FilaAjuste(
+                            icono = Icons.Filled.Check,
+                            titulo = "Sugerir Validador",
+                            detalle = "Verificar tamaño, resolución y errores",
+                            valor = ajustes.sugerirValidador,
+                            onCambia = vm::setSugerirValidador
+                        )
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+                    Text("Recordar elección", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+                    Text(
+                        "Si activas «No preguntar más», las sugerencias dejan de aparecer.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
                     )
-                    FilaAjuste(
-                        titulo = "Sugerir Validador",
-                        detalle = "Al terminar, ofrece revisar el PDF",
-                        valor = ajustes.sugerirValidador,
-                        onCambia = vm::setSugerirValidador
+                    Spacer(Modifier.height(10.dp))
+
+                    Tarjeta(padding = 0.dp) {
+                        FilaAjuste(
+                            icono = Icons.Filled.Description,
+                            titulo = "No preguntar más",
+                            detalle = if (ajustes.noPreguntarMas) "Sugerencias ocultas" else "Preguntar siempre",
+                            valor = ajustes.noPreguntarMas,
+                            onCambia = vm::setNoPreguntarMas,
+                            inactivo = !ajustes.noPreguntarMas
+                        )
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+                    Text("Almacenamiento", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+                    Spacer(Modifier.height(10.dp))
+
+                    Tarjeta {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "Archivos de FileShifter",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = TextPrimary,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                formatearTamano(almacenamiento),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = TextPrimary
+                            )
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        LinearProgressIndicator(
+                            progress = { porcentaje },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(7.dp)
+                                .background(PrimaryLight, RoundedCornerShape(4.dp)),
+                            color = Primary,
+                            trackColor = PrimaryLight
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "${(porcentaje * 100).toInt()}% de 200 MB usados",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextMuted
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        BotonSecundario(
+                            texto = "Liberar espacio",
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { confirmar = true }
+                        )
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+                    Text(
+                        "FileShifter · 253432 · Carlos de Jesús Martínez Pineda",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
                     )
-                    FilaAjuste(
-                        titulo = "No preguntar más",
-                        detalle = "Oculta las sugerencias del flujo",
-                        valor = ajustes.noPreguntarMas,
-                        onCambia = vm::setNoPreguntarMas
+                    Text(
+                        "MVVM · Compose + Material 3 · 100% offline",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
                     )
+                    Spacer(Modifier.height(16.dp))
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "FileShifter · 253432 · Carlos de Jesús Martínez Pineda",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                "Arquitectura MVVM · Compose + Material 3 · 100% offline",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
+    }
+
+    if (confirmar) {
+        AlertDialog(
+            onDismissRequest = { confirmar = false },
+            title = { Text("Liberar espacio") },
+            text = {
+                Text(
+                    "Se borrarán los archivos generados de la carpeta FileShifter/ y el historial. " +
+                        "Esta acción no se puede deshacer."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.liberarEspacio()
+                    confirmar = false
+                }) { Text("Borrar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmar = false }) { Text("Cancelar") }
+            }
+        )
     }
 }
 
 @Composable
 private fun FilaAjuste(
+    icono: ImageVector,
     titulo: String,
     detalle: String,
     valor: Boolean,
-    onCambia: (Boolean) -> Unit
+    onCambia: (Boolean) -> Unit,
+    inactivo: Boolean = false
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Box(
+            Modifier
+                .width(4.dp)
+                .height(34.dp)
+                .background(Color.Transparent)
+        )
+        ChipIcono(icono, tamano = 40.dp, fondo = if (inactivo) PrimaryLight else PrimaryLight)
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(titulo, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                detalle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(titulo, style = MaterialTheme.typography.titleSmall, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+            Text(detalle, style = MaterialTheme.typography.bodySmall, color = Primary)
         }
         Switch(checked = valor, onCheckedChange = onCambia)
     }

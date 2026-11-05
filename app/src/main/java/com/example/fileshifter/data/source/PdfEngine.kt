@@ -14,6 +14,7 @@ import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
+import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import com.tom_roush.pdfbox.util.Matrix
@@ -44,7 +45,8 @@ object PdfEngine {
         uris: List<Uri>,
         unir: Boolean,
         carpeta: File,
-        base: String
+        base: String,
+        calidad: Int = 2
     ): List<File> {
         carpeta.mkdirs()
         val generados = mutableListOf<File>()
@@ -53,7 +55,7 @@ object PdfEngine {
             try {
                 uris.forEach { uri ->
                     val bitmap = decodificar(context, uri) ?: return@forEach
-                    agregarPaginaConImagen(doc, bitmap)
+                    agregarPaginaConImagen(doc, bitmap, calidad)
                     bitmap.recycle()
                 }
                 val salida = File(carpeta, "${base}_unido.pdf")
@@ -67,7 +69,7 @@ object PdfEngine {
                 val bitmap = decodificar(context, uri) ?: return@forEachIndexed
                 val doc = PDDocument()
                 try {
-                    agregarPaginaConImagen(doc, bitmap)
+                    agregarPaginaConImagen(doc, bitmap, calidad)
                     val salida = File(carpeta, "${base}_${indice + 1}.pdf")
                     doc.save(salida)
                     generados += salida
@@ -80,7 +82,7 @@ object PdfEngine {
         return generados
     }
 
-    private fun agregarPaginaConImagen(doc: PDDocument, bitmap: Bitmap) {
+    private fun agregarPaginaConImagen(doc: PDDocument, bitmap: Bitmap, calidad: Int = 2) {
         val horizontal = bitmap.width > bitmap.height
         val pagina = if (horizontal) {
             PDPage(PDRectangle(PDRectangle.A4.height, PDRectangle.A4.width))
@@ -89,7 +91,11 @@ object PdfEngine {
         }
         doc.addPage(pagina)
 
-        val imagen = LosslessFactory.createFromImage(doc, bitmap)
+        val imagen = if (calidad >= 2) {
+            LosslessFactory.createFromImage(doc, bitmap)
+        } else {
+            JPEGFactory.createFromImage(doc, aplanar(bitmap), if (calidad == 1) 0.82f else 0.6f)
+        }
         val anchoPagina = pagina.mediaBox.width
         val altoPagina = pagina.mediaBox.height
         val escala = minOf(anchoPagina / imagen.width, altoPagina / imagen.height) * 0.94f
@@ -105,6 +111,14 @@ object PdfEngine {
                 alto
             )
         }
+    }
+
+    private fun aplanar(bitmap: Bitmap): Bitmap {
+        val salida = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        val lienzo = android.graphics.Canvas(salida)
+        lienzo.drawColor(android.graphics.Color.WHITE)
+        lienzo.drawBitmap(bitmap, 0f, 0f, null)
+        return salida
     }
 
     private fun decodificar(context: Context, uri: Uri): Bitmap? {

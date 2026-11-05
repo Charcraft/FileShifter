@@ -16,6 +16,7 @@ import java.io.File
 data class ScannerUiState(
     val foto: String? = null,
     val texto: String = "",
+    val capturas: Int = 0,
     val procesando: Boolean = false,
     val generando: Boolean = false,
     val resultado: ResultadoConversion? = null
@@ -31,7 +32,9 @@ class ScannerViewModel(
 
     fun onFotoCapturada(archivo: File) {
         viewModelScope.launch {
-            _estado.update { it.copy(procesando = true, resultado = null, foto = archivo.absolutePath) }
+            _estado.update {
+                it.copy(procesando = true, resultado = null, foto = archivo.absolutePath, capturas = it.capturas + 1)
+            }
             val texto = runCatching { ocr.reconocer(archivo) }.getOrDefault("")
             _estado.update {
                 it.copy(
@@ -45,8 +48,27 @@ class ScannerViewModel(
         }
     }
 
+    fun onGaleria(uri: String) {
+        viewModelScope.launch {
+            _estado.update { it.copy(procesando = true, resultado = null) }
+            val archivo = runCatching { repositorio.copiarTemporal(uri, "galeria_${System.currentTimeMillis()}.jpg") }
+                .getOrNull()
+            if (archivo == null) {
+                _estado.update {
+                    it.copy(procesando = false, resultado = ResultadoConversion(false, "No se pudo abrir la imagen."))
+                }
+            } else {
+                onFotoCapturada(archivo)
+            }
+        }
+    }
+
     fun onTextoCambia(texto: String) {
         _estado.update { it.copy(texto = texto) }
+    }
+
+    fun limpiar() {
+        _estado.update { it.copy(texto = "", foto = null, resultado = null) }
     }
 
     fun generarPdf() {
