@@ -40,7 +40,7 @@ import androidx.navigation.NavController
 import com.example.fileshifter.data.model.PlantillaEntrega
 import com.example.fileshifter.navigation.Screen
 import com.example.fileshifter.presentation.common.BotonPrincipal
-import com.example.fileshifter.presentation.common.CampoNeumorph
+import com.example.fileshifter.presentation.common.CampoTexto
 import com.example.fileshifter.presentation.common.ContenidoResponsive
 import com.example.fileshifter.presentation.common.PantallaBase
 import com.example.fileshifter.presentation.common.Pasos
@@ -226,7 +226,7 @@ fun DeliveryStep2Screen(navController: NavController) {
                             Spacer(Modifier.height(10.dp))
                             Campo("Título del trabajo *", datos.titulo, vm::onTitulo)
                             Spacer(Modifier.height(10.dp))
-                            CampoNeumorph(
+                            CampoTexto(
                                 valor = datos.indice,
                                 onCambia = vm::onIndice,
                                 etiqueta = "Índice (una línea por punto)",
@@ -253,7 +253,7 @@ fun DeliveryStep2Screen(navController: NavController) {
 
 @Composable
 private fun Campo(etiqueta: String, valor: String, onCambia: (String) -> Unit) {
-    CampoNeumorph(
+    CampoTexto(
         valor = valor,
         onCambia = onCambia,
         etiqueta = etiqueta.removeSuffix(" *"),

@@ -14,8 +14,8 @@ View / UI  →  ViewModel  →  Repository  →  Datos
 | --- | --- | --- |
 | View | `presentation/<feature>/*Screen.kt` | Dibuja la pantalla, emite eventos, observa el estado. No decide nada. |
 | ViewModel | `presentation/<feature>/*ViewModel.kt` | Guarda el estado de la pantalla, valida, llama al repositorio y expone `StateFlow`. |
-| Repository | `data/repository/` | Contrato único de acceso a datos. La UI nunca toca PDFBox, Room ni DataStore. |
-| Datos | `data/local/`, `data/source/`, `data/model/` | Room (historial), DataStore (ajustes), motores PDF/Office, ML Kit, archivos. |
+| Repository | `data/repository/` | Contrato único de acceso a datos. La UI nunca toca PDFBox, Room, DataStore ni Retrofit. |
+| Datos | `data/local/`, `data/source/`, `data/model/` | Room (historial y referencias), DataStore (ajustes), motores PDF/Office, ML Kit, archivos y cliente Crossref. |
 
 ## 2. Regla de oro
 
@@ -51,13 +51,13 @@ com.example.fileshifter
 ├── MainActivity.kt
 ├── data
 │   ├── model/                     # modelos de dominio (no Android)
-│   ├── local/                     # Room: historial
-│   ├── source/                    # motores: PDFBox, Office, OCR, QR
-│   └── repository/                # DocumentRepository, HistoryRepository, SettingsRepository
+│   ├── local/                     # Room: historial y referencias
+│   ├── source/                    # motores: PDFBox, Office, OCR, QR, Crossref
+│   └── repository/                # Documento, Historial, Referencias, Ajustes
 ├── domain/                        # reglas puras (corrector ortográfico, validador)
 ├── presentation
 │   ├── home/  convert/  image/  edit/  corrector/
-│   ├── delivery/  validator/  scanner/  qr/  history/  settings/
+│   ├── delivery/  validator/  scanner/  qr/  history/  settings/  references/
 └── ui/theme/                      # Material 3 celeste
 ```
 
@@ -93,7 +93,8 @@ cambios de paso y a la rotación de pantalla.
 
 | Qué | Cómo |
 | --- | --- |
-| Historial de archivos generados | Room (`HistoryEntity` + `HistoryDao`) |
+| Historial de archivos generados | Room (`HistorialEntity` + `HistorialDao`) |
+| Referencias bibliográficas guardadas | Room (`ReferenciaEntity` + `ReferenciaDao`, migración 1 → 2) |
 | Preferencias del flujo (sugerir corrector/entrega/validador) | DataStore Preferences |
 | Archivos generados | carpeta externa privada `FileShifter/` + `FileProvider` para compartir |
 
@@ -111,3 +112,28 @@ cambios de paso y a la rotación de pantalla.
 Los interruptores de Ajustes se guardan con DataStore. `TarjetaResultado` los lee
 y muestra u oculta las sugerencias **Corregir / Entrega / Validar** al terminar
 una conversión, tal como describe la propuesta.
+
+## 10. Flujo con red (buscador de referencias)
+
+Es el único punto de la app que usa internet, y sigue la misma regla de capas:
+
+```
+ReferenciasScreen            (View: campo, lista, avisos)
+        ↓ evento
+ReferenciasViewModel         (UiState: consulta, cargando, error, resultados)
+        ↓
+ReferenciasRepository        (contrato; decide red o caché)
+        ├── CrossrefApi      (Retrofit + Gson, data/source)
+        └── ReferenciaDao    (Room, respaldo sin conexión)
+```
+
+Decisiones que vale la pena defender en la revisión:
+
+1. **El ViewModel no conoce Retrofit.** Solo recibe `Result<List<Referencia>>`.
+2. **El reintento vive en el repositorio**, no en la pantalla: si la primera
+   llamada falla, espera 600 ms y lo intenta otra vez.
+3. **El modo sin conexión no es un caso aparte:** si la red falla, el mismo método
+   devuelve lo guardado y el `UiState` marca `desdeCache = true` para que la
+   pantalla lo explique con un aviso.
+4. **La migración de Room está declarada** (1 → 2). El historial que ya tenía el
+   usuario no se pierde al actualizar.

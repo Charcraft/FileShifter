@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -66,6 +67,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -117,9 +120,10 @@ fun BarraSuperior(
             if (onVolver != null) {
                 Surface(
                     color = Color.White.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.size(48.dp)
                 ) {
-                    IconButton(onClick = onVolver, modifier = Modifier.size(40.dp)) {
+                    IconButton(onClick = onVolver, modifier = Modifier.size(48.dp)) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
@@ -338,11 +342,20 @@ fun EncabezadoSeccion(
             titulo,
             style = MaterialTheme.typography.titleLarge,
             color = TextPrimary,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).semantics { heading() }
         )
-        if (accion != null && onAccion != null) {
-            TextButton(onClick = onAccion) {
-                Text(accion, color = Primary, style = MaterialTheme.typography.labelLarge)
+        if (accion != null) {
+            if (onAccion != null) {
+                TextButton(onClick = onAccion) {
+                    Text(accion, color = Primary, style = MaterialTheme.typography.labelLarge)
+                }
+            } else {
+                Text(
+                    accion,
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(end = 4.dp)
+                )
             }
         }
     }
@@ -434,30 +447,31 @@ fun EtiquetaTipo(texto: String) {
 }
 
 /**
- * Campo de texto hundido: mantiene los colores del prototipo (fondo blanco,
- * texto oscuro) y suma la sombra interior del estilo neumórfico.
+ * Campo de texto limpio (sin relieve): fondo blanco, borde suave y etiqueta.
+ * El foco se marca con el borde y el cursor, no con sombras.
  */
 @Composable
-fun CampoNeumorph(
+fun CampoTexto(
     valor: String,
     onCambia: (String) -> Unit,
     etiqueta: String,
     modifier: Modifier = Modifier,
     minLines: Int = 1,
     singleLine: Boolean = false,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
     Column(
         modifier
             .fillMaxWidth()
-            .neumorphInset(corner = 14.dp, profundidad = 7.dp, fondo = Surface)
+            .background(Surface, RoundedCornerShape(14.dp))
             .border(1.dp, Border, RoundedCornerShape(14.dp))
-            .padding(horizontal = 14.dp, vertical = 11.dp)
+            .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
         Text(
             etiqueta.uppercase(),
             style = MaterialTheme.typography.labelSmall,
-            color = TextMuted
+            color = TextSecondary
         )
         Spacer(Modifier.height(4.dp))
         Box(Modifier.fillMaxWidth()) {
@@ -475,6 +489,7 @@ fun CampoNeumorph(
                 singleLine = singleLine,
                 minLines = minLines,
                 keyboardOptions = keyboardOptions,
+                keyboardActions = keyboardActions,
                 cursorBrush = SolidColor(Primary),
                 modifier = Modifier.fillMaxWidth()
             )

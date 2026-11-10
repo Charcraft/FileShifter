@@ -1,7 +1,8 @@
 ﻿# FileShifter — Estado actual frente a lo prometido
 
 Auditoría hecha el **5 de noviembre de 2026** comparando la *Propuesta y diseño de
-interfaces* (Etapa 1) con el código que existe hoy en el repositorio.
+interfaces* (Etapa 1) con el código que existe hoy en el repositorio. Se actualizó
+el **9 de noviembre** al agregar el buscador de referencias (F9).
 
 > Resumen: la app **compila, se instala y funciona en un teléfono real**. La base
 > MVVM está completa y las funciones principales ya generan archivos de verdad.
@@ -24,6 +25,8 @@ interfaces* (Etapa 1) con el código que existe hoy en el repositorio.
 | QR | UI real | ✅ PNG guardado en `FileShifter/` |
 | Modo Entrega | UI real | ✅ PDF con materia, título, alumno e índice |
 | Corrector | UI real | ✅ detecta «aquí», «también», «había», «información» |
+| Búsqueda en Crossref | UI real, datos móviles | ✅ 12 resultados con título, autores, año y DOI |
+| Respaldo sin conexión | Modo avión | ✅ aviso «sin conexión» y referencias guardadas |
 
 Los archivos generados se guardan en:
 `Android/data/com.carlos.fileshifter/files/FileShifter/`
@@ -101,6 +104,19 @@ sin tocar la UI.
 - Generación de QR y CODE-128 con ZXing.
 - Pestaña de historial de códigos y todo lo generado entra al historial.
 
+### F9 — Referencias bibliográficas ✅
+
+- Búsqueda en el catálogo abierto **Crossref** con Retrofit + Gson: hasta 12
+  coincidencias con título, autores, año, revista/editorial, tipo y DOI.
+- Cita automática en formato **APA 7**, lista para copiar al portapapeles.
+- Lo guardado queda en Room (`referencia`, base de datos versión 2) y se puede
+  borrar o vaciar.
+- Estados de carga, sin resultados, error con **Reintentar** y respaldo local
+  cuando no hay conexión (se probó en modo avión).
+- Pendiente: insertar las referencias directamente en el PDF del Modo Entrega.
+  Hoy se copian como cita; falta el paso de seleccionarlas y que el generador de
+  portada las incluya en la última página.
+
 ---
 
 ## 3. Interfaz y logotipo
@@ -130,12 +146,13 @@ selector de archivos de Android en lugar de listar todos los PDF del teléfono;
 | Requisito de la materia | Estado |
 | --- | --- |
 | View separada de la lógica | ✅ cada pantalla solo pinta estado y emite eventos |
-| ViewModel por pantalla / flujo | ✅ 11 ViewModels |
+| ViewModel por pantalla / flujo | ✅ 12 ViewModels |
 | `UiState` inmutable + `StateFlow` | ✅ |
 | Repository como contrato | ✅ `DocumentoRepository` (interfaz) |
 | Datos aislados | ✅ Room, DataStore, PDFBox y ML Kit solo en `data/` |
 | Inyección de dependencias | ✅ `FileShifterApp` + `AppContainer` + `appViewModel` |
-| Persistencia | ✅ Room (historial) y DataStore (ajustes) |
+| Persistencia | ✅ Room (historial y referencias) y DataStore (ajustes) |
+| Consumo de API | ✅ `ReferenciasRepository` + Retrofit, con caché en Room |
 | Flujos multipaso con estado compartido | ✅ Editar y Entrega con grafo anidado |
 | Pruebas | ✅ 6 unitarias + 6 instrumentadas |
 

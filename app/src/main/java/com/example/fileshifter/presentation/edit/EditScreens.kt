@@ -53,7 +53,7 @@ import com.example.fileshifter.data.model.TipoEdicion
 import com.example.fileshifter.data.model.formatearTamano
 import com.example.fileshifter.navigation.Screen
 import com.example.fileshifter.presentation.common.BotonPrincipal
-import com.example.fileshifter.presentation.common.CampoNeumorph
+import com.example.fileshifter.presentation.common.CampoTexto
 import com.example.fileshifter.presentation.common.ChipIcono
 import com.example.fileshifter.presentation.common.ContenidoResponsive
 import com.example.fileshifter.presentation.common.FilaArchivo
@@ -337,7 +337,7 @@ fun EditModeScreen(navController: NavController) {
                             TipoEdicion.ELIMINAR -> Tarjeta {
                                 Text("Páginas a eliminar", style = MaterialTheme.typography.titleMedium)
                                 Spacer(Modifier.height(8.dp))
-                                CampoNeumorph(
+                                CampoTexto(
                                     valor = estado.opciones.paginas,
                                     onCambia = vm::onPaginas,
                                     etiqueta = "Ejemplo: 2,4-6"
@@ -347,7 +347,7 @@ fun EditModeScreen(navController: NavController) {
                             TipoEdicion.REORDENAR -> Tarjeta {
                                 Text("Nuevo orden de páginas", style = MaterialTheme.typography.titleMedium)
                                 Spacer(Modifier.height(8.dp))
-                                CampoNeumorph(
+                                CampoTexto(
                                     valor = estado.opciones.orden,
                                     onCambia = vm::onOrden,
                                     etiqueta = "Ejemplo: 3,1,2"
@@ -357,7 +357,7 @@ fun EditModeScreen(navController: NavController) {
                             TipoEdicion.MARCA_AGUA -> Tarjeta {
                                 Text("Texto de la marca", style = MaterialTheme.typography.titleMedium)
                                 Spacer(Modifier.height(8.dp))
-                                CampoNeumorph(
+                                CampoTexto(
                                     valor = estado.opciones.textoMarcaAgua,
                                     onCambia = vm::onMarcaAgua,
                                     etiqueta = "Ejemplo: COPIA"

@@ -43,7 +43,7 @@ import com.example.fileshifter.data.model.Referencia
 import com.example.fileshifter.data.repository.aModelo
 import com.example.fileshifter.presentation.common.BotonPrincipal
 import com.example.fileshifter.presentation.common.BotonSecundario
-import com.example.fileshifter.presentation.common.CampoNeumorph
+import com.example.fileshifter.presentation.common.CampoTexto
 import com.example.fileshifter.presentation.common.ChipIcono
 import com.example.fileshifter.presentation.common.ContenidoResponsive
 import com.example.fileshifter.presentation.common.EncabezadoSeccion
@@ -112,7 +112,7 @@ fun ReferenciasScreen(navController: NavController) {
                         }
 
                         Spacer(Modifier.height(14.dp))
-                        CampoNeumorph(
+                        CampoTexto(
                             valor = estado.consulta,
                             onCambia = vm::onConsulta,
                             etiqueta = "Título, autor o tema",

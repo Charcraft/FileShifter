@@ -1,12 +1,15 @@
 # FileShifter
 
-**Suite ofimática offline para Android** — Kotlin + Jetpack Compose + Material 3.
-Convierte, edita, escanea y valida documentos sin enviar nada a Internet.
+**Suite ofimática para Android** — Kotlin + Jetpack Compose + Material 3.
+Convierte, edita, escanea y valida documentos en el teléfono. Los archivos que
+generas nunca salen del dispositivo; solo el buscador de bibliografía consulta
+un catálogo abierto cuando hay conexión.
 
 - **Alumno:** Carlos de Jesús Martínez Pineda
 - **Matrícula:** 253432 — Grupo 4C
 - **Materia:** Desarrollo de Aplicaciones Móviles
 - **Arquitectura:** MVVM (View → ViewModel → Repository → Datos)
+- **Versión:** 1.0.0
 
 ---
 
@@ -18,16 +21,19 @@ Convierte, edita, escanea y valida documentos sin enviar nada a Internet.
 | Instalación en dispositivo real (SM-A525M, Android 14) | ✅ |
 | Pruebas unitarias (`testDebugUnitTest`) | ✅ 6/6 |
 | Pruebas en dispositivo (`connectedDebugAndroidTest`) | ✅ 6/6 |
+| Consulta a Crossref con resultados en pantalla | ✅ verificado |
+| Respaldo local del buscador sin conexión | ✅ verificado en modo avión |
 | Conversión imagen → PDF verificada | ✅ PDF A4 de 1 página con la imagen |
 | Rotación de PDF verificada | ✅ 2 páginas a 180° |
 | Historial (Room) verificado | ✅ registro persistente |
 | QR y portada de entrega verificados | ✅ archivos generados |
 
 Detalle honesto de qué está terminado y qué falta: **[docs/ESTADO_ACTUAL.md](docs/ESTADO_ACTUAL.md)**.
+Evidencias de la ejecución en el teléfono: **[docs/evidencias](docs/evidencias)**.
 
 ---
 
-## Las 8 funciones
+## Las funciones
 
 | # | Función | Estado |
 | --- | --- | --- |
@@ -39,10 +45,72 @@ Detalle honesto de qué está terminado y qué falta: **[docs/ESTADO_ACTUAL.md](
 | F6 | Validador con semáforo, SHA-256 y QR | ✅ |
 | F7 | Escáner con cámara + OCR + PDF | 🟡 sin detección de bordes |
 | F8 | QR / barras (leer, generar, historial) | ✅ |
+| F9 | **Referencias bibliográficas** (Crossref, cita APA y respaldo offline) | ✅ |
 
 Extras: **Historial** con Room, **Ajustes** con DataStore y flujo configurable
 (los interruptores ya ocultan las sugerencias de Corregir / Entrega / Validar
 en las tarjetas de resultado).
+
+---
+
+## Consumo de API
+
+F9 resuelve el problema de citar fuentes al armar un trabajo. En lugar de que el
+alumno copie la bibliografía a mano, la app consulta el catálogo abierto
+**Crossref**, que no pide llave ni registro.
+
+```
+GET https://api.crossref.org/works
+    ?query.bibliographic=jetpack+compose
+    &rows=12
+    &select=DOI,title,author,issued,container-title,publisher,type
+User-Agent: FileShifter/1.0 (mailto:charcraftycarlos@gmail.com)
+```
+
+La respuesta se mapea a un modelo propio (`Referencia`) con título, autores, año,
+fuente, tipo y DOI. De ahí se arma la cita en formato APA 7.
+
+El flujo completo queda así:
+
+```
+ReferenciasScreen → ReferenciasViewModel → ReferenciasRepository
+                                            ├── CrossrefApi (Retrofit)
+                                            └── ReferenciaDao (Room)
+```
+
+Puntos que se cuidaron:
+
+- **Carga:** botón deshabilitado y aviso «Consultando el catálogo…» con indicador.
+- **Errores:** mensaje entendible y botón **Reintentar**; el repositorio hace un
+  segundo intento antes de rendirse.
+- **Sin resultados:** texto de ayuda para cambiar la búsqueda (autor, una palabra
+  del título o el DOI).
+- **Sin conexión:** se muestran las referencias guardadas que coinciden con la
+  consulta, con un aviso claro de que se está leyendo del dispositivo.
+- **Persistencia:** lo guardado vive en Room (tabla `referencia`, versión 2 de la
+  base de datos con su migración) y se puede borrar o vaciar.
+
+---
+
+## Evidencias
+
+Ejecución real en un Galaxy A52 (SM-A525M, Android 14), 9 de noviembre de 2026.
+Todas las capturas están en **[docs/evidencias](docs/evidencias)**.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/evidencias/02_inicio.png" width="200"><br><sub>Inicio</sub></td>
+    <td align="center"><img src="docs/evidencias/08_modo_entrega.png" width="200"><br><sub>Modo Entrega</sub></td>
+    <td align="center"><img src="docs/evidencias/13_referencias_resultados.png" width="200"><br><sub>Referencias (Crossref)</sub></td>
+    <td align="center"><img src="docs/evidencias/15_referencias_sin_conexion.png" width="200"><br><sub>Sin conexión</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/evidencias/05_editar_pdf.png" width="200"><br><sub>Editar PDF</sub></td>
+    <td align="center"><img src="docs/evidencias/06_escaner.png" width="200"><br><sub>Escáner</sub></td>
+    <td align="center"><img src="docs/evidencias/16_historial.png" width="200"><br><sub>Historial (Room)</sub></td>
+    <td align="center"><img src="docs/evidencias/10_qr.png" width="200"><br><sub>QR / Barras</sub></td>
+  </tr>
+</table>
 
 ---
 
@@ -57,23 +125,23 @@ com.example.fileshifter
 ├── FileShifterApp.kt          # Application + AppContainer (inyección manual)
 ├── data
 │   ├── model/                 # modelos puros (sin Android)
-│   ├── local/                 # Room (historial) + DataStore (ajustes)
-│   ├── source/                # PDFBox, extractor Office, OCR, QR, archivos
-│   └── repository/             # DocumentoRepository, HistorialRepository
+│   ├── local/                 # Room (historial, referencias) + DataStore (ajustes)
+│   ├── source/                # PDFBox, Office, OCR, QR, archivos, Crossref
+│   └── repository/            # Documento, Historial y Referencias
 ├── domain/                    # CorrectorOrtografico (lógica pura)
 ├── presentation
 │   ├── home/ convert/ image/ edit/ corrector/
-│   ├── delivery/ validator/ scanner/ qr/ history/ settings/
+│   ├── delivery/ validator/ scanner/ qr/ history/ settings/ references/
 │   └── common/                # pantalla base, cámara, componentes
 ├── navigation/AppNav.kt
-└── ui/theme/                  # Material 3 celeste #0EA5E9
+└── ui/theme/                  # Material 3 celeste #0EA5E9 + neumorfismo
 ```
 
 Reglas que se respetan en todo el código:
 
 1. La pantalla **no** abre archivos ni convierte nada: manda eventos.
 2. El **ViewModel** guarda el estado y llama al repositorio.
-3. El **repositorio** es la única puerta a PDFBox, Room, DataStore y ML Kit.
+3. El **repositorio** es la única puerta a PDFBox, Room, DataStore, ML Kit y la red.
 4. Los flujos de varios pasos (Editar, Entrega) comparten un ViewModel dentro
    de un grafo de navegación anidado.
 
@@ -83,11 +151,12 @@ Documento completo: **[docs/ARQUITECTURA_MVVM.md](docs/ARQUITECTURA_MVVM.md)**.
 
 ## Interfaz
 
-La app reproduce el prototipo de Figma (`https://input-chop-13093493.figma.site`):
+La app reproduce el prototipo de Figma (`https://input-chop-13093493.figma.site`)
+con un acabado neumórfico:
 
 - Barra superior azul marino con el logotipo y el botón de regreso cuadrado.
-- Franjas informativas celestes, tarjetas blancas con borde suave y chips de icono.
-- Pantalla de bienvenida (splash) con el logotipo, tres beneficios y botón **Comenzar**.
+- Franjas informativas celestes, tarjetas y chips con sombra suave.
+- Pantalla de bienvenida con el logotipo, tres beneficios y botón **Comenzar**.
 - Pasos numerados en Editar PDF y Modo Entrega; pestañas en QR.
 - **Pantalla completa real (edge-to-edge)**: la app dibuja detrás de la barra de
   estado y de navegación, con insets correctos en notch, gestos y landscape.
@@ -109,9 +178,9 @@ Requisitos: Android Studio, Android SDK 35, **JDK 21 para Gradle**.
 > `org.gradle.java.installations.paths` en `gradle.properties`.
 
 ```bash
-./gradlew assembleDebug          # APK de depuración
-./gradlew testDebugUnitTest      # lógica pura (corrector)
-./gradlew connectedDebugAndroidTest   # PDFBox real en el teléfono
+./gradlew assembleDebug                 # APK de depuración
+./gradlew testDebugUnitTest             # lógica pura (corrector)
+./gradlew connectedDebugAndroidTest     # PDFBox real en el teléfono
 ```
 
 APK resultante: `app/build/outputs/apk/debug/app-debug.apk`.
@@ -124,11 +193,12 @@ APK resultante: `app/build/outputs/apk/debug/app-debug.apk`.
 | --- | --- |
 | UI | Jetpack Compose + Material 3 + Navigation Compose |
 | Estado | Lifecycle ViewModel + StateFlow |
+| Red | Retrofit + Gson (catálogo Crossref) |
 | PDF | PDFBox-Android (`com.tom-roush`) |
 | Office | Lector ZIP/XML propio (DOCX/XLSX/PPTX, sin macros) |
 | OCR y códigos | ML Kit Text Recognition + Barcode Scanning |
 | Cámara | CameraX |
-| Datos | Room (historial) + DataStore (ajustes) |
+| Datos | Room (historial, referencias) + DataStore (ajustes) |
 | QR | ZXing core |
 
 ---
@@ -137,4 +207,5 @@ APK resultante: `app/build/outputs/apk/debug/app-debug.apk`.
 
 - `docs/ARQUITECTURA_MVVM.md` — capas, paquetes, inyección y flujos.
 - `docs/ESTADO_ACTUAL.md` — auditoría de lo prometido vs. lo implementado.
+- `docs/evidencias/` — capturas del funcionamiento en el teléfono.
 - `README.md` — este archivo.
