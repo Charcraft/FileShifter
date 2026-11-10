@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -22,8 +23,14 @@ import com.example.fileshifter.ui.theme.FileShifterTheme
 class MainActivity : ComponentActivity() {
     private val permisoAlmacenamiento = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) {
-        // Es opcional: sin permiso la app sigue guardando en su carpeta privada.
+    ) { concedido ->
+        if (!concedido) {
+            Toast.makeText(
+                this,
+                "Sin acceso a Documentos, los archivos se guardan en la carpeta privada de la app y puedes compartirlos.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

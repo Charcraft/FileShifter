@@ -216,6 +216,16 @@ fun SettingsScreen(navController: NavController) {
                             style = MaterialTheme.typography.bodySmall,
                             color = TextMuted
                         )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                "Los archivos también se copian a Documentos/FileShifter."
+                            } else {
+                                "Los archivos se guardan en el almacenamiento de la app y se comparten con el botón Compartir."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
                         Spacer(Modifier.height(14.dp))
                         BotonSecundario(
                             texto = "Liberar espacio",
