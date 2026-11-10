@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Spellcheck
@@ -89,6 +90,7 @@ fun HomeScreen(navController: NavController) {
         Herramienta("Editar PDF", "Unir, dividir, rotar", Icons.Filled.Edit, Screen.EditPicker.route),
         Herramienta("Escanear", "Cámara inteligente", Icons.Filled.DocumentScanner, Screen.Scanner.route),
         Herramienta("Corrector", "Ortografía y estilo", Icons.Filled.Spellcheck, Screen.Corrector.route),
+        Herramienta("Referencias", "Buscar y citar", Icons.Filled.MenuBook, Screen.Referencias.route),
         Herramienta("Modo Entrega", "Portada + plantillas", Icons.Filled.Description, Screen.Delivery1.route),
         Herramienta("QR / Barras", "Leer y generar", Icons.Filled.QrCode, Screen.Qr.route),
         Herramienta("Validador", "Verificar documento", Icons.Filled.Verified, Screen.Validator.route),

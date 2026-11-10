@@ -7,6 +7,8 @@ import com.example.fileshifter.data.local.AppDatabase
 import com.example.fileshifter.data.repository.DocumentoRepository
 import com.example.fileshifter.data.repository.DocumentoRepositoryImpl
 import com.example.fileshifter.data.repository.HistorialRepository
+import com.example.fileshifter.data.repository.ReferenciasRepository
+import com.example.fileshifter.data.repository.ReferenciasRepositoryImpl
 import com.example.fileshifter.data.source.OcrService
 import com.example.fileshifter.data.source.Archivos
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
@@ -38,5 +40,7 @@ class AppContainer(context: Context) {
     val ajustesRepository: AjustesRepository = AjustesRepository(context)
     val documentoRepository: DocumentoRepository =
         DocumentoRepositoryImpl(context, historialRepository)
+    val referenciasRepository: ReferenciasRepository =
+        ReferenciasRepositoryImpl(baseDatos.referenciaDao())
     val ocrService: OcrService = OcrService(context)
 }

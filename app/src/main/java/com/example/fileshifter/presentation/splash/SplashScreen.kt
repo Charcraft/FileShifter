@@ -113,7 +113,7 @@ fun SplashScreen(navController: NavController) {
         }
         Spacer(Modifier.height(12.dp))
         Text(
-            "Sin registro · Sin internet · Sin límites",
+            "Sin registro · Sin cuentas · Sin límites",
             style = MaterialTheme.typography.bodySmall,
             color = TextSecondary
         )

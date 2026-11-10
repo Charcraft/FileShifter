@@ -19,6 +19,7 @@ import com.example.fileshifter.presentation.history.HistoryScreen
 import com.example.fileshifter.presentation.home.HomeScreen
 import com.example.fileshifter.presentation.image.ImageToPdfScreen
 import com.example.fileshifter.presentation.qr.QrScreen
+import com.example.fileshifter.presentation.references.ReferenciasScreen
 import com.example.fileshifter.presentation.scanner.ScannerScreen
 import com.example.fileshifter.presentation.settings.SettingsScreen
 import com.example.fileshifter.presentation.splash.SplashScreen
@@ -40,6 +41,7 @@ sealed class Screen(val route: String, val label: String) {
     data object Delivery2 : Screen("delivery_2", "Datos")
     data object Delivery3 : Screen("delivery_3", "Vista previa")
     data object Validator : Screen("validator", "Validador")
+    data object Referencias : Screen("referencias", "Referencias")
     data object Scanner : Screen("scanner", "Escáner")
     data object Qr : Screen("qr", "QR")
     data object History : Screen("history", "Historial")
@@ -85,6 +87,7 @@ fun AppNav(navController: NavHostController) {
 
         composable(Screen.Corrector.route) { CorrectorScreen(navController) }
         composable(Screen.Validator.route) { ValidatorScreen(navController) }
+        composable(Screen.Referencias.route) { ReferenciasScreen(navController) }
         composable(Screen.Scanner.route) { ScannerScreen(navController) }
         composable(Screen.Qr.route) { QrScreen(navController) }
         composable(Screen.History.route) { HistoryScreen(navController) }
