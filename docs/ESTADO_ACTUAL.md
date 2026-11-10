@@ -6,7 +6,7 @@ el **9 de noviembre** al agregar el buscador de referencias (F9).
 
 > Resumen: la app **compila, se instala y funciona en un teléfono real**. La base
 > MVVM está completa y las funciones principales ya generan archivos de verdad.
-> Quedan tres funciones con alcance reducido (corrector, escáner y modo entrega)
+> Quedan dos funciones con alcance reducido (corrector y modo entrega)
 > y una mejora de interacción (reordenar arrastrando).
 
 ---
@@ -96,14 +96,16 @@ sin tocar la UI.
 - QR con el hash para verificación offline.
 - Compartir el resumen con el hash por cualquier app.
 
-### F7 — Escáner 🟡
+### F7 — Escáner ✅
 
-- ✅ Cámara CameraX a pantalla completa, marco guía, captura, OCR con ML Kit y
+- Cámara CameraX a pantalla completa, marco guía, captura, OCR con ML Kit y
   salida a PDF o al corrector. También admite una imagen de la galería.
-- 🟡 Detección automática de bordes: el detector está integrado y dibuja el marco,
-  pero sus pruebas de esquinas todavía no pasan (error de ~100 px en imágenes de
-  prueba), así que el recorte se sigue haciendo a mano. No se anuncia como
-  terminado.
+- Detección automática de bordes con `DetectorDocumento` (Hough guiado por
+  gradiente y respaldo por máscara). El marco se puede ajustar a mano en los
+  cuatro vértices.
+- Corrección de perspectiva (`ScanEngine.corregirPerspectiva`) y filtros de
+  escaneo antes de guardar el JPEG que se convierte a PDF.
+- Las pruebas de esquinas y de proceso completo pasan en el dispositivo y en JVM.
 
 ### F8 — QR y barras ✅
 
@@ -185,7 +187,7 @@ selector de archivos de Android en lugar de listar todos los PDF del teléfono;
 
 1. **Reordenar arrastrando** en Editar PDF (hoy se escribe el orden).
 2. **Importar plantilla PDF/DOCX** en Modo Entrega.
-3. **Escáner con detección de bordes** y corrección de perspectiva.
+3. **Escáner:** mantener los filtros y probar con más tipos de hoja.
 4. **Corrector con diccionario completo** (asset de ~2.5 MB) y reglas gramaticales.
 5. Compartir el QR del Validador como imagen.
 6. Multihilo por lotes con WorkManager y notificación (la propuesta lo menciona
