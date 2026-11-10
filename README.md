@@ -9,7 +9,7 @@ un catálogo abierto cuando hay conexión.
 - **Matrícula:** 253432 — Grupo 4C
 - **Materia:** Desarrollo de Aplicaciones Móviles
 - **Arquitectura:** MVVM (View → ViewModel → Repository → Datos)
-- **Versión:** 1.0.0
+- **Versión:** 1.3.0
 
 ---
 
@@ -19,8 +19,8 @@ un catálogo abierto cuando hay conexión.
 | --- | --- |
 | `./gradlew assembleDebug` | ✅ compila |
 | Instalación en dispositivo real (SM-A525M, Android 14) | ✅ |
-| Pruebas unitarias (`testDebugUnitTest`) | ✅ 10/10 (corrector y formatos) |
-| Pruebas de extremo a extremo (`connectedDebugAndroidTest`) | ✅ 25/25 en el dispositivo |
+| Pruebas unitarias (`testDebugUnitTest`) | ✅ 16/16 (corrector, formatos y detector) |
+| Pruebas de extremo a extremo (`connectedDebugAndroidTest`) | ✅ 39/39 en el dispositivo |
 | Conversión PDF → DOCX y DOCX → PDF verificada | ✅ contenido conservado |
 | Archivos guardados en `Documentos/FileShifter` | ✅ visibles en el explorador |
 | Consulta a Crossref con resultados en pantalla | ✅ verificado |
@@ -89,14 +89,14 @@ Puntos que se cuidaron:
   del título o el DOI).
 - **Sin conexión:** se muestran las referencias guardadas que coinciden con la
   consulta, con un aviso claro de que se está leyendo del dispositivo.
-- **Persistencia:** lo guardado vive en Room (tabla `referencia`, versión 2 de la
-  base de datos con su migración) y se puede borrar o vaciar.
+- **Persistencia:** lo guardado vive en Room (tabla `referencia`, versión 3 de la
+  base de datos con sus migraciones) y se puede borrar o vaciar.
 
 ---
 
 ## Evidencias
 
-Ejecución real en un Galaxy A52 (SM-A525M, Android 14), 9 de noviembre de 2026.
+Ejecución real en un Galaxy A52 (SM-A525M, Android 14), 9 y 10 de noviembre de 2026.
 Todas las capturas están en **[docs/evidencias](docs/evidencias)**.
 
 <table>
@@ -181,8 +181,8 @@ Requisitos: Android Studio, Android SDK 35, **JDK 21 para Gradle**.
 
 ```bash
 ./gradlew assembleDebug                 # APK de depuración
-./gradlew testDebugUnitTest             # lógica pura (corrector)
-./gradlew connectedDebugAndroidTest     # PDFBox real en el teléfono
+./gradlew testDebugUnitTest             # lógica pura (corrector, formatos, detector)
+./gradlew connectedDebugAndroidTest     # 39 pruebas reales en el teléfono
 ```
 
 APK resultante: `app/build/outputs/apk/debug/app-debug.apk`.
@@ -194,7 +194,7 @@ APK resultante: `app/build/outputs/apk/debug/app-debug.apk`.
 Las pruebas instrumentadas corren en el teléfono y trabajan con archivos reales:
 escriben el origen, convierten con el repositorio y vuelven a abrir el resultado
 para comprobar su contenido (páginas del PDF, texto del DOCX, hash SHA-256,
-lectura del QR con ML Kit).
+lectura del QR con ML Kit). En total son **16 pruebas unitarias y 39 instrumentadas**.
 
 | Suite | Casos | Qué cubre |
 | --- | --- | --- |
@@ -203,11 +203,16 @@ lectura del QR con ML Kit).
 | `NavegacionE2ETest` | 6 | Bienvenida, inicio y apertura de cada herramienta |
 | `VisorE2ETest` | 7 | Miniaturas, caché, copia pública en el historial y dibujo del PDF en el visor |
 | `RenombrarE2ETest` | 5 | Renombrar archivo, copia pública y registro; extensión, caracteres inválidos y duplicados |
+| `EscaneoCalidadTest` | 1 | Resolución y calidad del escaneo en el dispositivo |
+| `PortadaRenderTest` | 1 | Dibujo de la portada de entrega |
 | `PdfEngineTest` | 5 | Unir, dividir, rotar, marca de agua, rangos de páginas |
+| `DetectorDocumentoTest` (JVM) | 5 | Esquinas del documento en imágenes claras y oscuras |
+| `CorrectorOrtograficoTest` (JVM) | 6 | Tildes, repeticiones y errores frecuentes |
 | `FormatosTest` (JVM) | 4 | Matriz de conversiones que ofrece la pantalla |
 
 ```bash
-./gradlew connectedDebugAndroidTest   # 25 casos en el dispositivo
+./gradlew testDebugUnitTest            # 16 pruebas de lógica
+./gradlew connectedDebugAndroidTest    # 39 pruebas en el dispositivo
 ```
 
 ---
@@ -220,6 +225,7 @@ pueda adjuntar a un correo o abrir con Word. En Android 10 o superior se usa
 MediaStore, así que no hacen falta permisos de almacenamiento.
 
 ## Visor y caché
+
 Cada documento generado se puede abrir dentro de la app, desde el botón **Ver**
 de la tarjeta de resultado o tocando cualquier fila del historial:
 
@@ -292,3 +298,11 @@ guarda el historial para abrir el documento después.
 - `docs/ESTADO_ACTUAL.md` — auditoría de lo prometido vs. lo implementado.
 - `docs/evidencias/` — capturas del funcionamiento en el teléfono.
 - `README.md` — este archivo.
+
+---
+
+## Entrega
+
+- **APK:** [FileShifter 1.3.0](https://github.com/Charcraft/FileShifter/releases/tag/v1.3.0)
+- **Informe técnico:** PDF de 23 páginas en la entrega de Classroom.
+- **Video de respaldo:** los flujos principales están en las capturas de `docs/evidencias`.
