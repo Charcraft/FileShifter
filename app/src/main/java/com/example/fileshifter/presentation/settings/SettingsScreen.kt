@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -37,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -221,21 +223,22 @@ private fun FilaAjuste(
     inactivo: Boolean = false
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 13.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(value = valor, onValueChange = onCambia, role = Role.Switch)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            Modifier
-                .width(4.dp)
-                .height(34.dp)
-                .background(Color.Transparent)
-        )
-        ChipIcono(icono, tamano = 40.dp, fondo = if (inactivo) PrimaryLight else PrimaryLight)
+        ChipIcono(icono, tamano = 40.dp, fondo = PrimaryLight)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(titulo, style = MaterialTheme.typography.titleSmall, color = TextPrimary, fontWeight = FontWeight.SemiBold)
-            Text(detalle, style = MaterialTheme.typography.bodySmall, color = Primary)
+            Text(
+                detalle,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (inactivo) TextMuted else Primary
+            )
         }
-        Switch(checked = valor, onCheckedChange = onCambia)
+        Switch(checked = valor, onCheckedChange = null)
     }
 }

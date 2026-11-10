@@ -36,11 +36,16 @@ class ScannerViewModel(
                 it.copy(procesando = true, resultado = null, foto = archivo.absolutePath, capturas = it.capturas + 1)
             }
             val texto = runCatching { ocr.reconocer(archivo) }.getOrDefault("")
-            _estado.update {
-                it.copy(
+            val nuevo = texto.trim()
+            _estado.update { estado ->
+                estado.copy(
                     procesando = false,
-                    texto = texto.ifBlank { it.texto },
-                    resultado = if (texto.isBlank()) {
+                    texto = when {
+                        nuevo.isBlank() -> estado.texto
+                        estado.texto.isBlank() -> nuevo
+                        else -> estado.texto + "\n\n" + nuevo
+                    },
+                    resultado = if (nuevo.isBlank()) {
                         ResultadoConversion(false, "No se detectó texto en la foto. Intenta con más luz.")
                     } else null
                 )

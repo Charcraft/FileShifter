@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +30,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -70,6 +75,7 @@ fun ReferenciasScreen(navController: NavController) {
     val estado by vm.estado.collectAsStateWithLifecycle()
     val guardadas by vm.guardadas.collectAsStateWithLifecycle()
     val portapapeles = LocalClipboardManager.current
+    var confirmarVaciar by remember { mutableStateOf(false) }
 
     PantallaBase(
         titulo = "Referencias",
@@ -81,12 +87,6 @@ fun ReferenciasScreen(navController: NavController) {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            TiraInfo(
-                listOf(
-                    "Catálogo en línea" to true,
-                    "Guardadas sin conexión" to true
-                )
-            )
             Migas(listOf("Herramientas", "Referencias"))
 
             ContenidoResponsive {
@@ -117,7 +117,8 @@ fun ReferenciasScreen(navController: NavController) {
                             onCambia = vm::onConsulta,
                             etiqueta = "Título, autor o tema",
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { vm.buscar() })
                         )
                         Spacer(Modifier.height(12.dp))
                         BotonPrincipal(
@@ -231,7 +232,7 @@ fun ReferenciasScreen(navController: NavController) {
                         EncabezadoSeccion(
                             titulo = "Guardadas",
                             accion = "Vaciar",
-                            onAccion = vm::limpiarGuardadas
+                            onAccion = { confirmarVaciar = true }
                         )
                         Spacer(Modifier.height(10.dp))
 
@@ -258,6 +259,23 @@ fun ReferenciasScreen(navController: NavController) {
                 }
             }
         }
+    }
+
+    if (confirmarVaciar) {
+        AlertDialog(
+            onDismissRequest = { confirmarVaciar = false },
+            title = { Text("Vaciar referencias guardadas") },
+            text = { Text("Se eliminarán todas las referencias guardadas en este dispositivo.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.limpiarGuardadas()
+                    confirmarVaciar = false
+                }) { Text("Vaciar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmarVaciar = false }) { Text("Cancelar") }
+            }
+        )
     }
 }
 

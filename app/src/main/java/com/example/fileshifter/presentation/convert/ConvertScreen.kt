@@ -24,6 +24,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +61,14 @@ fun ConvertScreen(navController: NavController) {
         SettingsViewModel(it.ajustesRepository, it.historialRepository, it.carpetaSalida)
     }
     val ajustes by ajustesVm.ajustes.collectAsStateWithLifecycle()
+
+    // "No preguntar validación": al terminar, va directo al historial.
+    LaunchedEffect(estado.resultado) {
+        val resultado = estado.resultado
+        if (resultado != null && resultado.exito && ajustes.noPreguntarMas) {
+            navController.navigate(Screen.History.route) { launchSingleTop = true }
+        }
+    }
 
     val selector = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
         vm.onArchivosSeleccionados(uris.map(Uri::toString))

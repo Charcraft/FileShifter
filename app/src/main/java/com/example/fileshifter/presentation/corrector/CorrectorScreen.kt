@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -114,15 +115,6 @@ fun CorrectorScreen(navController: NavController) {
                                 }, enabled = estado.texto.isNotBlank()) {
                                     Text("Revisar", color = Primary)
                                 }
-                                TextButton(
-                                    onClick = {
-                                        teclado?.hide()
-                                        vm.aplicarTodas()
-                                    },
-                                    enabled = estado.sugerencias.isNotEmpty()
-                                ) {
-                                    Text("Aplicar todas", color = Primary)
-                                }
                             }
                         }
 
@@ -210,6 +202,7 @@ fun CorrectorScreen(navController: NavController) {
                 Row(
                     modifier = Modifier
                         .navigationBarsPadding()
+                        .imePadding()
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)

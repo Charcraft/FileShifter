@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -93,31 +94,6 @@ fun DeliveryStep1Screen(navController: NavController) {
                                     modifier = Modifier.weight(1f)
                                 ) { vm.onPlantilla(plantilla) }
                             }
-                        }
-
-                        Spacer(Modifier.height(14.dp))
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .drawBehind {
-                                    drawRoundRect(
-                                        color = Border,
-                                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx()),
-                                        style = Stroke(
-                                            width = 1.5.dp.toPx(),
-                                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 10f))
-                                        )
-                                    )
-                                },
-                            color = Color.Transparent
-                        ) {
-                            Text(
-                                "+   Importar mi plantilla (.docx / .pdf)",
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                                textAlign = TextAlign.Center,
-                                color = TextMuted,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
                         }
 
                         Spacer(Modifier.height(16.dp))
@@ -233,13 +209,26 @@ fun DeliveryStep2Screen(navController: NavController) {
                                 minLines = 4
                             )
                         }
+                        if (!estado.formularioValido) {
+                            Spacer(Modifier.height(10.dp))
+                            Text(
+                                "Completa el nombre y el título para continuar.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
                         Spacer(Modifier.height(16.dp))
                     }
                 }
             }
 
             Surface(color = Background) {
-                Column(Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Column(
+                    Modifier
+                        .navigationBarsPadding()
+                        .imePadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
                     BotonPrincipal(
                         texto = "Siguiente — Vista previa  ›",
                         enabled = estado.formularioValido,

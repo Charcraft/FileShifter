@@ -501,8 +501,8 @@ fun CampoTexto(
 fun MenuTresPuntos(contenido: @Composable ColumnScope.() -> Unit) {
     var abierto by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { abierto = true }, modifier = Modifier.size(36.dp)) {
-            Icon(Icons.Filled.MoreVert, contentDescription = "Más opciones", tint = TextMuted)
+        IconButton(onClick = { abierto = true }, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Filled.MoreVert, contentDescription = "Más opciones", tint = TextSecondary)
         }
         DropdownMenu(expanded = abierto, onDismissRequest = { abierto = false }) {
             Column { contenido() }
@@ -565,15 +565,15 @@ fun FilaArchivo(
             Spacer(Modifier.width(8.dp))
             Surface(
                 color = SurfaceMuted,
-                shape = RoundedCornerShape(9.dp),
-                modifier = Modifier.size(30.dp)
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.size(40.dp)
             ) {
-                IconButton(onClick = onQuitar, modifier = Modifier.size(30.dp)) {
+                IconButton(onClick = onQuitar, modifier = Modifier.size(40.dp)) {
                     Icon(
                         Icons.Filled.Close,
-                        contentDescription = "Quitar",
-                        tint = TextMuted,
-                        modifier = Modifier.size(16.dp)
+                        contentDescription = "Quitar archivo",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }

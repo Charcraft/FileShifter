@@ -230,9 +230,9 @@ fun ScannerScreen(navController: NavController) {
                                 modifier = Modifier.weight(1f)
                             )
                             Text(
-                                "1 página",
+                                if (estado.capturas == 1) "1 página" else "${estado.capturas} páginas",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TextMuted
+                                color = TextSecondary
                             )
                         }
                         Spacer(Modifier.height(6.dp))
@@ -318,7 +318,10 @@ fun ScannerScreen(navController: NavController) {
                         modifier = Modifier
                             .size(78.dp)
                             .background(Color.White, CircleShape)
-                            .clickable {
+                            .clickable(
+                                onClickLabel = "Capturar página",
+                                role = androidx.compose.ui.semantics.Role.Button
+                            ) {
                                 val captura = capturador ?: return@clickable
                                 val archivo = File(contexto.cacheDir, "captura_${System.currentTimeMillis()}.jpg")
                                 tomarFoto(captura, ejecutor, archivo) { vm.onFotoCapturada(it) }
