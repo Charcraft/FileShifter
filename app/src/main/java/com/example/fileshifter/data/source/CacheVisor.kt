@@ -104,6 +104,11 @@ object CacheVisor {
         }
     }
 
+    /** Borra la miniatura asociada a un archivo (por ejemplo al renombrarlo). */
+    fun borrarMiniatura(context: Context, archivo: File) {
+        runCatching { File(carpeta(context), clave(archivo)).delete() }
+    }
+
     /** Tamano actual del cache, para mostrarlo en Ajustes. */
     fun tamanoBytes(context: Context): Long =
         carpeta(context).listFiles()?.sumOf { it.length() } ?: 0L

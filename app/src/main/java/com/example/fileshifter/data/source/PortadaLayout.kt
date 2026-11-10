@@ -337,7 +337,7 @@ object PortadaLayoutBuilder {
                 h = maxAlto
                 w = h * proporcion
             }
-            return LogoPortada(uri, (ancho - w) / 2f, (alto - h) / 2f, w, h, opacidad = 0.10f)
+            return LogoPortada(uri, (ancho - w) / 2f, (alto - h) / 2f, w, h, opacidad = 0.08f)
         }
 
         val maxAncho = 92f

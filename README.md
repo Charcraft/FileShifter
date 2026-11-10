@@ -202,6 +202,7 @@ lectura del QR con ML Kit).
 | `FlujoDocumentosE2ETest` | 6 | Imagen a PDF, guardado en Documentos, historial, validador, QR y barras |
 | `NavegacionE2ETest` | 6 | Bienvenida, inicio y apertura de cada herramienta |
 | `VisorE2ETest` | 7 | Miniaturas, caché, copia pública en el historial y dibujo del PDF en el visor |
+| `RenombrarE2ETest` | 5 | Renombrar archivo, copia pública y registro; extensión, caracteres inválidos y duplicados |
 | `PdfEngineTest` | 5 | Unir, dividir, rotar, marca de agua, rangos de páginas |
 | `FormatosTest` (JVM) | 4 | Matriz de conversiones que ofrece la pantalla |
 
@@ -219,7 +220,6 @@ pueda adjuntar a un correo o abrir con Word. En Android 10 o superior se usa
 MediaStore, así que no hacen falta permisos de almacenamiento.
 
 ## Visor y caché
-
 Cada documento generado se puede abrir dentro de la app, desde el botón **Ver**
 de la tarjeta de resultado o tocando cualquier fila del historial:
 
@@ -231,6 +231,20 @@ de la tarjeta de resultado o tocando cualquier fila del historial:
 | DOCX, XLSX, PPTX | Vista previa del texto extraído + «Abrir con» |
 
 Desde el visor se puede compartir el archivo o abrirlo con otra aplicación.
+
+### Cambiar el nombre de un documento
+
+En el historial, el menú de cada archivo tiene **Cambiar nombre**. El cambio
+renombra las tres cosas a la vez:
+
+1. el archivo de la carpeta privada,
+2. la copia de `Documentos/FileShifter` (se vuelve a publicar y se borra la anterior),
+3. el registro de Room, que el historial muestra al instante.
+
+Se conserva la extensión original, se quitan los caracteres que Android no
+permite en un nombre y, si ya existe un archivo con ese nombre, se agrega `_1`,
+`_2`… en lugar de sobrescribirlo. La miniatura vieja se borra del caché para que
+se regenere con el nombre nuevo.
 
 El historial usa una **caché propia en `cacheDir/visor`** para mostrar la
 miniatura del documento (primera página del PDF o la foto reducida). Esa caché:

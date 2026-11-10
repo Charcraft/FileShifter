@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -67,6 +68,7 @@ import com.example.fileshifter.presentation.common.Tarjeta
 import com.example.fileshifter.presentation.common.TarjetaResultado
 import com.example.fileshifter.presentation.common.TiraInfo
 import com.example.fileshifter.presentation.common.appViewModel
+import com.example.fileshifter.presentation.common.recordarPermisoCamara
 import com.example.fileshifter.ui.theme.Background
 import com.example.fileshifter.ui.theme.Border
 import com.example.fileshifter.ui.theme.Primary
@@ -106,6 +108,19 @@ fun ImageToPdfScreen(navController: NavController) {
         camara.launch(uri)
     }
 
+    val permisoCamara = recordarPermisoCamara { otorgado ->
+        if (otorgado) tomarFoto()
+    }
+    var avisoCamara by remember { mutableStateOf(false) }
+
+    fun pulsarCamara() {
+        when {
+            permisoCamara.concedido -> tomarFoto()
+            permisoCamara.bloqueado -> avisoCamara = true
+            else -> permisoCamara.solicitar()
+        }
+    }
+
     PantallaBase(titulo = "Imagen → PDF", onVolver = { navController.popBackStack() }) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
             TiraInfo(listOf("Conversión rápida" to true, "Sin configuración extra" to false))
@@ -123,7 +138,7 @@ fun ImageToPdfScreen(navController: NavController) {
                                 color = TextPrimary,
                                 modifier = Modifier.weight(1f)
                             )
-                            IconButton(onClick = { tomarFoto() }) {
+                            IconButton(onClick = { pulsarCamara() }) {
                                 Icon(
                                     Icons.Filled.PhotoCamera,
                                     contentDescription = "Tomar foto",
@@ -251,6 +266,28 @@ fun ImageToPdfScreen(navController: NavController) {
                 }
             }
         }
+    }
+
+    if (avisoCamara) {
+        AlertDialog(
+            onDismissRequest = { avisoCamara = false },
+            title = { Text("Permiso de cámara") },
+            text = {
+                Text(
+                    "Para tomar la foto necesitamos acceso a la cámara. " +
+                        "Actívalo en los ajustes del sistema y vuelve a intentarlo."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    avisoCamara = false
+                    permisoCamara.abrirAjustes()
+                }) { Text("Abrir ajustes") }
+            },
+            dismissButton = {
+                TextButton(onClick = { avisoCamara = false }) { Text("Cancelar") }
+            }
+        )
     }
 }
 

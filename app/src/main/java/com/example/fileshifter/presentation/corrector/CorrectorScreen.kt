@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
@@ -62,6 +63,7 @@ fun CorrectorScreen(navController: NavController) {
     val vm: CorrectorViewModel = appViewModel { CorrectorViewModel() }
     val estado by vm.estado.collectAsStateWithLifecycle()
     val teclado = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val portapapeles = androidx.compose.ui.platform.LocalClipboardManager.current
 
     LaunchedEffect(Unit) {
         if (BorradorTexto.texto.isNotBlank()) {
@@ -113,6 +115,15 @@ fun CorrectorScreen(navController: NavController) {
                                     vm.revisar()
                                 }, enabled = estado.texto.isNotBlank()) {
                                     Text("Revisar", color = Primary)
+                                }
+                                TextButton(
+                                    onClick = {
+                                        portapapeles.setText(AnnotatedString(estado.texto))
+                                        teclado?.hide()
+                                    },
+                                    enabled = estado.texto.isNotBlank()
+                                ) {
+                                    Text("Copiar texto", color = Primary)
                                 }
                             }
                         }

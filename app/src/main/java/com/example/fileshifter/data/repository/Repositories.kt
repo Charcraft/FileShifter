@@ -1,7 +1,9 @@
 package com.example.fileshifter.data.repository
 
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
+import android.provider.MediaStore
 import com.example.fileshifter.data.local.HistorialDao
 import com.example.fileshifter.data.local.HistorialEntity
 import com.example.fileshifter.data.model.ArchivoSeleccionado
@@ -17,6 +19,7 @@ import com.example.fileshifter.data.model.Semaforo
 import com.example.fileshifter.data.model.TipoDocumento
 import com.example.fileshifter.data.model.TipoEdicion
 import com.example.fileshifter.data.source.Archivos
+import com.example.fileshifter.data.source.CacheVisor
 import com.example.fileshifter.data.source.GeneradorCodigos
 import com.example.fileshifter.data.source.OfficeTextExtractor
 import com.example.fileshifter.data.source.OfficeWriter
@@ -26,6 +29,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
+
+private fun avisoDocumentos(publicado: Boolean): String =
+    if (publicado) " También quedó en Documentos/FileShifter." else ""
 
 class HistorialRepository(private val dao: HistorialDao) {
     val historial: Flow<List<HistorialEntity>> = dao.observarTodo()
@@ -53,6 +59,9 @@ class HistorialRepository(private val dao: HistorialDao) {
 
     suspend fun eliminar(id: Long) = withContext(Dispatchers.IO) { dao.eliminar(id) }
 
+    suspend fun actualizarNombre(id: Long, nombre: String, ruta: String, publica: String?) =
+        withContext(Dispatchers.IO) { dao.actualizarNombre(id, nombre, ruta, publica) }
+
     suspend fun limpiar() = withContext(Dispatchers.IO) { dao.limpiar() }
 }
 
@@ -68,6 +77,9 @@ interface DocumentoRepository {
     suspend fun textoAPdf(texto: String, titulo: String): ResultadoConversion
     suspend fun escaneoAPdf(rutas: List<String>): ResultadoConversion
     suspend fun generarCodigo(texto: String, esQr: Boolean): File
+
+    /** Cambia el nombre del archivo (copia privada, copia publica y registro). */
+    suspend fun renombrar(registro: HistorialEntity, nuevoNombre: String): ResultadoConversion
 }
 
 class DocumentoRepositoryImpl(
@@ -92,13 +104,13 @@ class DocumentoRepositoryImpl(
                     base = base,
                     calidad = calidad
                 )
-                registrarTodo(generados, "Imagen a PDF")
+                val publicado = registrarTodo(generados, "Imagen a PDF")
                 ResultadoConversion(
                     exito = generados.isNotEmpty(),
                     mensaje = if (generados.isEmpty()) {
                         "No se pudo leer ninguna imagen."
                     } else {
-                        "${generados.size} archivo(s) creado(s) en Documentos/FileShifter."
+                        "${generados.size} archivo(s) creado(s).${avisoDocumentos(publicado)}"
                     },
                     archivos = generados.map { it.absolutePath }
                 )
@@ -189,7 +201,7 @@ class DocumentoRepositoryImpl(
                 carpeta = carpeta,
                 base = base
             )
-            registrarTodo(generados, tipo.etiqueta)
+            val publicado = registrarTodo(generados, tipo.etiqueta)
             val mensaje = if (tipo == TipoEdicion.COMPRIMIR && generados.isNotEmpty()) {
                 val original = Archivos.describir(context, Uri.parse(uris.first())).tamanoBytes
                 val comprimido = generados.first().length()
@@ -199,7 +211,7 @@ class DocumentoRepositoryImpl(
                 "PDF comprimido: ${com.example.fileshifter.data.model.formatearTamano(original)} → " +
                     "${com.example.fileshifter.data.model.formatearTamano(comprimido)} ($ahorro% menos)."
             } else {
-                "${generados.size} archivo(s) generado(s): ${tipo.etiqueta}. También quedó en Documentos/FileShifter."
+                "${generados.size} archivo(s) generado(s): ${tipo.etiqueta}.${avisoDocumentos(publicado)}"
             }
             ResultadoConversion(
                 true,
@@ -224,8 +236,8 @@ class DocumentoRepositoryImpl(
                 datos = datos,
                 salida = salida
             )
-            registrarTodo(listOf(salida), "Modo Entrega")
-            ResultadoConversion(true, "Portada generada: ${salida.name}. También quedó en Documentos/FileShifter.", listOf(salida.absolutePath))
+            val publicado = registrarTodo(listOf(salida), "Modo Entrega")
+            ResultadoConversion(true, "Portada generada: ${salida.name}.${avisoDocumentos(publicado)}", listOf(salida.absolutePath))
         }.getOrElse { error ->
             ResultadoConversion(false, "No se pudo generar la portada: ${error.message}")
         }
@@ -293,8 +305,8 @@ class DocumentoRepositoryImpl(
                 val carpeta = Archivos.carpetaSalida(context)
                 val salida = File(carpeta, "${Archivos.limpiarNombre(titulo)}_${marcaTiempo()}.pdf")
                 PdfEngine.textoAPdf(texto, titulo, salida)
-                registrarTodo(listOf(salida), "Texto a PDF")
-                ResultadoConversion(true, "PDF generado: ${salida.name}. También quedó en Documentos/FileShifter.", listOf(salida.absolutePath))
+                val publicado = registrarTodo(listOf(salida), "Texto a PDF")
+                ResultadoConversion(true, "PDF generado: ${salida.name}.${avisoDocumentos(publicado)}", listOf(salida.absolutePath))
             }.getOrElse { error ->
                 ResultadoConversion(false, "No se pudo generar el PDF: ${error.message}")
             }
@@ -307,10 +319,10 @@ class DocumentoRepositoryImpl(
                 val carpeta = Archivos.carpetaSalida(context)
                 val salida = File(carpeta, "Escaneo_${marcaTiempo()}.pdf")
                 PdfEngine.paginasEscaneadasAPdf(rutas, salida)
-                registrarTodo(listOf(salida), "Escanear documento")
+                val publicado = registrarTodo(listOf(salida), "Escanear documento")
                 ResultadoConversion(
                     true,
-                    "PDF creado: ${salida.name}. También quedó en Documentos/FileShifter.",
+                    "PDF creado: ${salida.name}.${avisoDocumentos(publicado)}",
                     listOf(salida.absolutePath)
                 )
             }.getOrElse { error ->
@@ -335,6 +347,71 @@ class DocumentoRepositoryImpl(
             )
             salida
         }
+
+    override suspend fun renombrar(
+        registro: HistorialEntity,
+        nuevoNombre: String
+    ): ResultadoConversion = withContext(Dispatchers.IO) {
+        runCatching {
+            val limpio = nombreLimpio(nuevoNombre, registro.nombre)
+            require(limpio.isNotEmpty()) { "Escribe un nombre para el archivo" }
+
+            var rutaFinal = registro.ruta
+            val origen = File(registro.ruta)
+            if (origen.exists()) {
+                val destino = archivoLibre(File(origen.parentFile, limpio))
+                if (!origen.renameTo(destino)) {
+                    origen.copyTo(destino, overwrite = false)
+                    origen.delete()
+                }
+                CacheVisor.borrarMiniatura(context, origen)
+                rutaFinal = destino.absolutePath
+            }
+
+            // Si hubo que añadir sufijo, se guarda el nombre real del archivo.
+            val nombreFinal = File(rutaFinal).name.ifBlank { limpio }
+
+            // La copia publica se vuelve a publicar con el nombre nuevo y se borra la anterior.
+            var publicaFinal = registro.publica
+            Archivos.publicarEnDocumentos(context, File(rutaFinal))?.let { copia ->
+                registro.publica?.let { anterior ->
+                    runCatching { context.contentResolver.delete(Uri.parse(anterior), null, null) }
+                }
+                publicaFinal = copia.uri
+            }
+
+            historial.actualizarNombre(registro.id, nombreFinal, rutaFinal, publicaFinal)
+            ResultadoConversion(true, "Listo, ahora se llama $nombreFinal", listOf(rutaFinal))
+        }.getOrElse { error ->
+            ResultadoConversion(false, "No se pudo cambiar el nombre: ${error.message}")
+        }
+    }
+
+    /** Quita caracteres no permitidos y conserva la extension original. */
+    private fun nombreLimpio(nuevo: String, anterior: String): String {
+        val base = nuevo.trim().replace(Regex("[\\\\/:*?\"<>|]"), "").trim()
+        if (base.isEmpty()) return ""
+        val extension = anterior.substringAfterLast('.', "")
+        return when {
+            base.contains('.') -> base
+            extension.isNotEmpty() -> "$base.$extension"
+            else -> base
+        }
+    }
+
+    /** Si el nombre ya existe, agrega _1, _2... para no sobrescribir nada. */
+    private fun archivoLibre(deseado: File): File {
+        if (!deseado.exists()) return deseado
+        val base = deseado.nameWithoutExtension
+        val extension = deseado.extension
+        var contador = 1
+        while (true) {
+            val sufijo = if (extension.isEmpty()) "" else ".$extension"
+            val candidato = File(deseado.parentFile, "${base}_$contador$sufijo")
+            if (!candidato.exists()) return candidato
+            contador++
+        }
+    }
 
     private suspend fun registrarTodo(archivos: List<File>, operacion: String): Boolean {
         var publicado = false

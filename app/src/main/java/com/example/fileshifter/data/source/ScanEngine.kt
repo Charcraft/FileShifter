@@ -55,8 +55,9 @@ object ScanEngine {
         if (limites.outWidth <= 0 || limites.outHeight <= 0) return null
 
         var muestra = 1
-        var mayor = max(limites.outWidth, limites.outHeight)
-        while (mayor / (muestra * 2) >= ladoMaximo) muestra *= 2
+        val mayor = max(limites.outWidth, limites.outHeight)
+        // se reduce en pasos de 2 para no decodificar fotos gigantes a resolución completa
+        while (mayor / (muestra * 2) > ladoMaximo * 0.75f) muestra *= 2
 
         val opciones = BitmapFactory.Options().apply {
             inSampleSize = muestra
@@ -275,16 +276,22 @@ object ScanEngine {
         for (y in 0 until alto) {
             val yf = y + 0.5
             val base = y * ancho
+            var denominador = h6 * 0.5 + h7 * yf + 1.0
+            var numeradorX = h0 * 0.5 + h1 * yf + h2
+            var numeradorY = h3 * 0.5 + h4 * yf + h5
             for (x in 0 until ancho) {
-                val xf = x + 0.5
-                val denominador = h6 * xf + h7 * yf + 1.0
                 if (abs(denominador) < 1e-9) {
                     salida[base + x] = BLANCO
-                    continue
+                } else {
+                    val inverso = 1.0 / denominador
+                    salida[base + x] = muestrear(
+                        fuente, anchoOrigen, altoOrigen,
+                        numeradorX * inverso, numeradorY * inverso
+                    )
                 }
-                val sx = (h0 * xf + h1 * yf + h2) / denominador
-                val sy = (h3 * xf + h4 * yf + h5) / denominador
-                salida[base + x] = muestrear(fuente, anchoOrigen, altoOrigen, sx, sy)
+                denominador += h6
+                numeradorX += h0
+                numeradorY += h3
             }
         }
         return Bitmap.createBitmap(salida, ancho, alto, Bitmap.Config.ARGB_8888)
@@ -368,7 +375,7 @@ object ScanEngine {
                     val v = mapa[gris[i].toInt().coerceIn(0, 255)]
                     pixeles[i] = (0xFF shl 24) or (v shl 16) or (v shl 8) or v
                 }
-                realzar(pixeles, ancho, alto, 0.40f)
+                realzar(pixeles, ancho, alto, 0.30f)
             }
             FiltroEscaneo.BLANCO_NEGRO -> {
                 val umbralBase = otsu(gris).coerceIn(70f, 205f)
@@ -392,7 +399,7 @@ object ScanEngine {
                     b = (luminancia + (b - luminancia) * 1.06f).roundToInt().coerceIn(0, 255)
                     pixeles[i] = (0xFF shl 24) or (r shl 16) or (v shl 8) or b
                 }
-                realzar(pixeles, ancho, alto, 0.45f)
+                realzar(pixeles, ancho, alto, 0.35f)
             }
             FiltroEscaneo.ORIGINAL -> Unit
         }
@@ -493,12 +500,16 @@ object ScanEngine {
         val suma = FloatArray(celdasX * celdasY)
         val cuenta = IntArray(celdasX * celdasY)
 
+        val columnaCelda = IntArray(ancho)
+        for (x in 0 until ancho) {
+            columnaCelda[x] = min(celdasX - 1, x * celdasX / ancho)
+        }
+
         for (y in 0 until alto) {
-            val cy = min(celdasY - 1, y * celdasY / alto)
+            val baseCelda = min(celdasY - 1, y * celdasY / alto) * celdasX
             val fila = y * ancho
             for (x in 0 until ancho) {
-                val cx = min(celdasX - 1, x * celdasX / ancho)
-                val indice = cy * celdasX + cx
+                val indice = baseCelda + columnaCelda[x]
                 suma[indice] += gris[fila + x]
                 cuenta[indice]++
             }
@@ -528,22 +539,35 @@ object ScanEngine {
             actual = suavizada
         }
 
+        // posiciones de interpolación precalculadas por columna
+        val x0s = IntArray(ancho)
+        val x1s = IntArray(ancho)
+        val txs = FloatArray(ancho)
+        for (x in 0 until ancho) {
+            val fx = ((x + 0.5f) * celdasX / ancho - 0.5f).coerceIn(0f, celdasX - 1f)
+            val x0 = fx.toInt().coerceIn(0, celdasX - 1)
+            x0s[x] = x0
+            x1s[x] = min(celdasX - 1, x0 + 1)
+            txs[x] = fx - x0
+        }
+
         val salida = FloatArray(ancho * alto)
         for (y in 0 until alto) {
             val fy = ((y + 0.5f) * celdasY / alto - 0.5f).coerceIn(0f, celdasY - 1f)
             val y0 = fy.toInt().coerceIn(0, celdasY - 1)
             val y1 = min(celdasY - 1, y0 + 1)
             val ty = fy - y0
+            val filaArriba = y0 * celdasX
+            val filaAbajo = y1 * celdasX
             val fila = y * ancho
             for (x in 0 until ancho) {
-                val fx = ((x + 0.5f) * celdasX / ancho - 0.5f).coerceIn(0f, celdasX - 1f)
-                val x0 = fx.toInt().coerceIn(0, celdasX - 1)
-                val x1 = min(celdasX - 1, x0 + 1)
-                val tx = fx - x0
-                val arriba = actual[y0 * celdasX + x0] +
-                    (actual[y0 * celdasX + x1] - actual[y0 * celdasX + x0]) * tx
-                val abajo = actual[y1 * celdasX + x0] +
-                    (actual[y1 * celdasX + x1] - actual[y1 * celdasX + x0]) * tx
+                val x0 = x0s[x]
+                val x1 = x1s[x]
+                val tx = txs[x]
+                val arriba = actual[filaArriba + x0] +
+                    (actual[filaArriba + x1] - actual[filaArriba + x0]) * tx
+                val abajo = actual[filaAbajo + x0] +
+                    (actual[filaAbajo + x1] - actual[filaAbajo + x0]) * tx
                 salida[fila + x] = arriba + (abajo - arriba) * ty
             }
         }

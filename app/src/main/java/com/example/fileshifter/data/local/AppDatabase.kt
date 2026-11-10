@@ -41,6 +41,9 @@ interface HistorialDao {
     @Query("DELETE FROM historial WHERE id = :id")
     suspend fun eliminar(id: Long)
 
+    @Query("UPDATE historial SET nombre = :nombre, ruta = :ruta, publica = :publica WHERE id = :id")
+    suspend fun actualizarNombre(id: Long, nombre: String, ruta: String, publica: String?)
+
     @Query("DELETE FROM historial")
     suspend fun limpiar()
 }

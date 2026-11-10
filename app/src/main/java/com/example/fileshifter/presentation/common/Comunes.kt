@@ -679,6 +679,11 @@ fun TarjetaResultado(
         ) {
             if (resultado.archivos.isNotEmpty()) {
                 TextButton(
+                    onClick = { abrirArchivo(contexto, resultado.archivos.first()) },
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)
+                ) { Text("Abrir", color = Primary) }
+                TextButton(
                     onClick = { compartirArchivo(contexto, resultado.archivos.first()) },
                     contentPadding = PaddingValues(horizontal = 8.dp),
                     modifier = Modifier.defaultMinSize(minHeight = 48.dp)
@@ -716,15 +721,21 @@ fun compartirArchivo(context: Context, ruta: String) {
     runCatching {
         val uri = Archivos.uriCompartir(context, ruta)
         val intent = Intent(Intent.ACTION_SEND).apply {
-            type = when (File(ruta).extension.lowercase()) {
-                "pdf" -> "application/pdf"
-                "txt" -> "text/plain"
-                "png" -> "image/png"
-                else -> "*/*"
-            }
+            type = Archivos.mimeDe(ruta)
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(intent, "Compartir archivo"))
+    }
+}
+
+fun abrirArchivo(context: Context, ruta: String) {
+    runCatching {
+        val uri = Archivos.uriCompartir(context, ruta)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, Archivos.mimeDe(ruta))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, "Abrir archivo"))
     }
 }

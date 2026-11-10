@@ -50,6 +50,7 @@ import com.example.fileshifter.data.model.formatearTamano
 import com.example.fileshifter.data.source.CacheVisor
 import com.example.fileshifter.navigation.Screen
 import com.example.fileshifter.presentation.common.BarraInferior
+import com.example.fileshifter.presentation.common.CampoTexto
 import com.example.fileshifter.presentation.common.ChipIcono
 import com.example.fileshifter.presentation.common.ContenidoResponsive
 import com.example.fileshifter.presentation.common.EtiquetaTipo
@@ -76,11 +77,16 @@ private val FILTROS = listOf("Todos", "PDF", "IMG", "QR", "DOC", "XLS")
 
 @Composable
 fun HistoryScreen(navController: NavController) {
-    val vm: HistoryViewModel = appViewModel { HistoryViewModel(it.historialRepository) }
+    val vm: HistoryViewModel = appViewModel {
+        HistoryViewModel(it.historialRepository, it.documentoRepository)
+    }
     val historial by vm.historial.collectAsStateWithLifecycle()
+    val aviso by vm.aviso.collectAsStateWithLifecycle()
     val contexto = LocalContext.current
     var confirmarLimpiar by remember { mutableStateOf(false) }
     var filtro by remember { mutableStateOf("Todos") }
+    var editando by remember { mutableStateOf<HistorialEntity?>(null) }
+    var nombreNuevo by remember { mutableStateOf("") }
 
     val filtrados = historial.filter { item ->
         when (filtro) {
@@ -107,6 +113,20 @@ fun HistoryScreen(navController: NavController) {
         barraInferior = { BarraInferior(navController, Screen.History.route) }
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
+            aviso?.let { mensaje ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        mensaje,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Primary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = vm::descartarAviso) { Text("Cerrar", color = TextMuted) }
+                }
+            }
             LazyRow(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -164,6 +184,11 @@ fun HistoryScreen(navController: NavController) {
                                     filtrados.forEachIndexed { indice, item ->
                                         FilaHistorial(
                                             item = item,
+                                            onVer = { VisorActivity.abrir(contexto, item.publica ?: item.ruta, item.nombre) },
+                                            onRenombrar = {
+                                                editando = item
+                                                nombreNuevo = item.nombre.substringBeforeLast('.')
+                                            },
                                             onCompartir = {
                                                 if (File(item.ruta).exists()) compartirArchivo(contexto, item.ruta)
                                             },
@@ -181,8 +206,43 @@ fun HistoryScreen(navController: NavController) {
         }
     }
 
-    if (confirmarLimpiar) {
+    editando?.let { item ->
         AlertDialog(
+            onDismissRequest = { editando = null },
+            title = { Text("Cambiar nombre") },
+            text = {
+                Column {
+                    CampoTexto(
+                        valor = nombreNuevo,
+                        onCambia = { nombreNuevo = it },
+                        etiqueta = "Nombre del archivo",
+                        singleLine = true
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "Se conserva la extensión .${item.nombre.substringAfterLast('.')} y se " +
+                            "renombra también la copia de Documentos/FileShifter.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        vm.renombrar(item, nombreNuevo)
+                        editando = null
+                    },
+                    enabled = nombreNuevo.isNotBlank()
+                ) { Text("Guardar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editando = null }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    if (confirmarLimpiar) {        AlertDialog(
             onDismissRequest = { confirmarLimpiar = false },
             title = { Text("Limpiar historial") },
             text = { Text("Se quitarán los registros. Los archivos de la carpeta FileShifter/ no se borran.") },
@@ -202,6 +262,8 @@ fun HistoryScreen(navController: NavController) {
 @Composable
 private fun FilaHistorial(
     item: HistorialEntity,
+    onVer: () -> Unit,
+    onRenombrar: () -> Unit,
     onCompartir: () -> Unit,
     onEliminar: () -> Unit
 ) {
@@ -220,7 +282,7 @@ private fun FilaHistorial(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { VisorActivity.abrir(contexto, destino, item.nombre) }
+            .clickable { onVer() }
             .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -246,7 +308,8 @@ private fun FilaHistorial(
             }
         }
         MenuTresPuntos {
-            OpcionMenu("Ver documento") { VisorActivity.abrir(contexto, destino, item.nombre) }
+            OpcionMenu("Ver documento") { onVer() }
+            OpcionMenu("Cambiar nombre") { onRenombrar() }
             OpcionMenu("Compartir") { onCompartir() }
             OpcionMenu("Quitar del historial") { onEliminar() }
         }
@@ -284,3 +347,4 @@ private fun MiniaturaHistorial(item: HistorialEntity) {
         )
     }
 }
+

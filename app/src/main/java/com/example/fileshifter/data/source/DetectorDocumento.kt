@@ -154,14 +154,24 @@ object DetectorDocumento {
 
         val lineas = ArrayList<Linea>()
         val minimo = max(14, (maxSuave * 0.10f).toInt())
+        val perfil = IntArray(tamRho)
         for (b in 0 until BUCKETS_ANGULO) {
             val fila = acumulador[b]
+            var suma = 0
+            for (j in 0..6) suma += fila[j]
+            var i = 3
+            while (i < fila.size - 4) {
+                perfil[i] = suma
+                suma += fila[i + 4] - fila[i - 3]
+                i++
+            }
+
             var indice = 5
             while (indice < fila.size - 5) {
-                val ventana = sumaVentana(fila, indice, 3)
+                val ventana = perfil[indice]
                 if (ventana >= minimo &&
-                    ventana >= sumaVentana(fila, indice - 2, 3) &&
-                    ventana >= sumaVentana(fila, indice + 2, 3)
+                    ventana >= perfil[indice - 2] &&
+                    ventana >= perfil[indice + 2]
                 ) {
                     var sumaPeso = 0
                     var sumaPos = 0
@@ -187,6 +197,8 @@ object DetectorDocumento {
                     indice++
                 }
             }
+            // se limpia solo la zona usada para no reescribir todo el vector
+            java.util.Arrays.fill(perfil, 0)
         }
         if (lineas.isEmpty()) return null
 
@@ -268,13 +280,6 @@ object DetectorDocumento {
         return mejor.normalizado(ancho, alto)
     }
 
-    private fun sumaVentana(fila: IntArray, centro: Int, radio: Int): Int {
-        var suma = 0
-        val desde = max(0, centro - radio)
-        val hasta = min(fila.size - 1, centro + radio)
-        for (i in desde..hasta) suma += fila[i]
-        return suma
-    }
 
 
 

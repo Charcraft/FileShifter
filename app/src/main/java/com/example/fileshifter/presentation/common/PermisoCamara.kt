@@ -35,34 +35,50 @@ private tailrec fun Context.actividadActual(): Activity? = when (this) {
     else -> null
 }
 
+private const val PREFS_PERMISOS = "permisos"
+private const val CLAVE_CAMARA_SOLICITADA = "camara_solicitada"
+
 @Composable
-fun recordarPermisoCamara(): EstadoPermisoCamara {
+fun recordarPermisoCamara(alResultado: ((Boolean) -> Unit)? = null): EstadoPermisoCamara {
     val contexto = LocalContext.current
     val actividad = remember(contexto) { contexto.actividadActual() }
     val ciclo = LocalLifecycleOwner.current
+    val prefs = remember(contexto) {
+        contexto.getSharedPreferences(PREFS_PERMISOS, Context.MODE_PRIVATE)
+    }
 
     fun concedidoAhora(): Boolean =
         ContextCompat.checkSelfPermission(contexto, Manifest.permission.CAMERA) ==
             PackageManager.PERMISSION_GRANTED
 
+    fun yaSolicitada(): Boolean = prefs.getBoolean(CLAVE_CAMARA_SOLICITADA, false)
+
+    fun bloqueadoAhora(): Boolean {
+        if (concedidoAhora() || !yaSolicitada()) return false
+        return actividad?.shouldShowRequestPermissionRationale(
+            Manifest.permission.CAMERA
+        ) == false
+    }
+
     var concedido by remember { mutableStateOf(concedidoAhora()) }
-    var bloqueado by remember { mutableStateOf(false) }
+    var bloqueado by remember { mutableStateOf(bloqueadoAhora()) }
 
     val lanzador = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { otorgado ->
+        prefs.edit().putBoolean(CLAVE_CAMARA_SOLICITADA, true).apply()
         concedido = otorgado
-        if (!otorgado) {
-            bloqueado = actividad?.shouldShowRequestPermissionRationale(
-                Manifest.permission.CAMERA
-            ) == false
-        }
+        bloqueado = !otorgado && actividad?.shouldShowRequestPermissionRationale(
+            Manifest.permission.CAMERA
+        ) == false
+        alResultado?.invoke(otorgado)
     }
 
     DisposableEffect(ciclo) {
         val observador = LifecycleEventObserver { _, evento ->
             if (evento == Lifecycle.Event.ON_RESUME) {
                 concedido = concedidoAhora()
+                bloqueado = bloqueadoAhora()
             }
         }
         ciclo.lifecycle.addObserver(observador)
