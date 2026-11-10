@@ -62,6 +62,7 @@ import com.example.fileshifter.presentation.common.BarraInferior
 import com.example.fileshifter.presentation.common.BotonPrincipal
 import com.example.fileshifter.presentation.common.BotonSecundario
 import com.example.fileshifter.presentation.common.CamaraCodigos
+import com.example.fileshifter.presentation.common.CampoNeumorph
 import com.example.fileshifter.presentation.common.ChipIcono
 import com.example.fileshifter.presentation.common.ContenidoResponsive
 import com.example.fileshifter.presentation.common.EtiquetaTipo
@@ -265,12 +266,11 @@ private fun GenerarTab(
                 Tarjeta {
                     Text("Contenido del código", style = MaterialTheme.typography.titleMedium, color = TextPrimary)
                     Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = texto,
-                        onValueChange = onTexto,
-                        label = { Text("Texto o URL") },
-                        minLines = 3,
-                        modifier = Modifier.fillMaxWidth()
+                    CampoNeumorph(
+                        valor = texto,
+                        onCambia = onTexto,
+                        etiqueta = "Texto o URL",
+                        minLines = 3
                     )
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

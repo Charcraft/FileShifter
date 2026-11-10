@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
@@ -66,6 +67,7 @@ import com.example.fileshifter.ui.theme.Surface
 import com.example.fileshifter.ui.theme.TextMuted
 import com.example.fileshifter.ui.theme.TextPrimary
 import com.example.fileshifter.ui.theme.TextSecondary
+import com.example.fileshifter.ui.theme.neumorphRaised
 
 private data class Herramienta(
     val titulo: String,
@@ -183,10 +185,12 @@ private fun TarjetaHerramienta(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.height(122.dp),
-        shape = MaterialTheme.shapes.medium,
+        modifier = modifier
+            .height(122.dp)
+            .neumorphRaised(corner = 16.dp, elevacion = 6.dp, fondo = Surface),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
-        border = BorderStroke(1.dp, Border),
+        border = null,
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(Modifier.fillMaxSize().padding(10.dp)) {

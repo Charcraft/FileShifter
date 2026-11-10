@@ -31,3 +31,12 @@ val AmberText = Color(0xFF8A6100)
 
 val CameraDark = Color(0xFF080F1A)
 val CameraBar = Color(0xFF111A28)
+
+/**
+ * Tonos para el acabado neumórfico. No cambian la paleta del prototipo:
+ * solo definen la luz y la sombra de los relieves.
+ */
+val NeumorphBase = Color(0xFFF6FAFD)
+val NeumorphLight = Color(0xFFFFFFFF)
+val NeumorphDark = Color(0xFFCBD9E7)
+val NeumorphDarkSoft = Color(0xFFDCE7F2)

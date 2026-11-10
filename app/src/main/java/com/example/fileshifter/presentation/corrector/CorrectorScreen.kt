@@ -41,6 +41,7 @@ import androidx.navigation.NavController
 import com.example.fileshifter.presentation.common.BorradorTexto
 import com.example.fileshifter.presentation.common.BotonPrincipal
 import com.example.fileshifter.presentation.common.BotonSecundario
+import com.example.fileshifter.presentation.common.CampoNeumorph
 import com.example.fileshifter.presentation.common.ContenidoResponsive
 import com.example.fileshifter.presentation.common.PantallaBase
 import com.example.fileshifter.presentation.common.Tarjeta
@@ -96,15 +97,14 @@ fun CorrectorScreen(navController: NavController) {
                 ContenidoResponsive {
                     Column(Modifier.padding(16.dp)) {
                         Tarjeta(padding = 12.dp) {
-                            OutlinedTextField(
-                                value = estado.texto,
-                                onValueChange = vm::onTextoCambia,
-                                label = { Text("Texto a revisar") },
+                            CampoNeumorph(
+                                valor = estado.texto,
+                                onCambia = vm::onTextoCambia,
+                                etiqueta = "Texto a revisar",
                                 minLines = 3,
                                 keyboardOptions = KeyboardOptions(
                                     capitalization = KeyboardCapitalization.Sentences
-                                ),
-                                modifier = Modifier.fillMaxWidth()
+                                )
                             )
                             Spacer(Modifier.height(8.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

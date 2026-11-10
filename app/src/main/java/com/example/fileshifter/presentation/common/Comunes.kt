@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
@@ -57,7 +60,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -83,6 +88,8 @@ import com.example.fileshifter.ui.theme.SurfaceMuted
 import com.example.fileshifter.ui.theme.TextMuted
 import com.example.fileshifter.ui.theme.TextPrimary
 import com.example.fileshifter.ui.theme.TextSecondary
+import com.example.fileshifter.ui.theme.neumorphInset
+import com.example.fileshifter.ui.theme.neumorphRaised
 import java.io.File
 
 // ------------------------------------------------------------------ Barra superior
@@ -98,7 +105,7 @@ fun BarraSuperior(
     mostrarLogo: Boolean = false,
     acciones: @Composable RowScope.() -> Unit = {}
 ) {
-    Surface(color = Navy) {
+    Surface(color = Navy, shadowElevation = 8.dp) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -307,12 +314,11 @@ fun Tarjeta(
     padding: Dp = 16.dp,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        border = BorderStroke(1.dp, Border),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    Box(
+        modifier
+            .fillMaxWidth()
+            .neumorphRaised(corner = 18.dp, elevacion = 7.dp, fondo = Surface)
+            .clip(RoundedCornerShape(18.dp))
     ) {
         Column(Modifier.padding(padding), content = content)
     }
@@ -354,7 +360,7 @@ fun ChipIcono(
     Box(
         modifier
             .size(tamano)
-            .background(fondo, RoundedCornerShape(tamano * 0.3f)),
+            .neumorphRaised(corner = tamano * 0.3f, elevacion = 4.dp, fondo = fondo),
         contentAlignment = Alignment.Center
     ) {
         Icon(icono, contentDescription = null, tint = tinte, modifier = Modifier.size(tamano * 0.52f))
@@ -371,14 +377,21 @@ fun BotonPrincipal(
     androidx.compose.material3.Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.fillMaxWidth().height(54.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(54.dp)
+            .then(
+                if (enabled) Modifier.neumorphRaised(corner = 16.dp, elevacion = 6.dp, fondo = Primary)
+                else Modifier
+            ),
         shape = RoundedCornerShape(16.dp),
         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
             containerColor = Primary,
             contentColor = Color.White,
             disabledContainerColor = SurfaceMuted,
             disabledContentColor = TextMuted
-        )
+        ),
+        elevation = androidx.compose.material3.ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp)
     ) {
         Text(texto, style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp))
     }
@@ -392,12 +405,15 @@ fun BotonSecundario(
 ) {
     androidx.compose.material3.Button(
         onClick = onClick,
-        modifier = modifier.height(54.dp),
+        modifier = modifier
+            .height(54.dp)
+            .neumorphRaised(corner = 16.dp, elevacion = 5.dp, fondo = SurfaceMuted),
         shape = RoundedCornerShape(16.dp),
         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
             containerColor = SurfaceMuted,
             contentColor = TextSecondary
         ),
+        border = BorderStroke(1.dp, Border),
         elevation = androidx.compose.material3.ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp)
     ) {
         Text(texto, style = MaterialTheme.typography.titleMedium)
@@ -414,6 +430,55 @@ fun EtiquetaTipo(texto: String) {
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
+    }
+}
+
+/**
+ * Campo de texto hundido: mantiene los colores del prototipo (fondo blanco,
+ * texto oscuro) y suma la sombra interior del estilo neumórfico.
+ */
+@Composable
+fun CampoNeumorph(
+    valor: String,
+    onCambia: (String) -> Unit,
+    etiqueta: String,
+    modifier: Modifier = Modifier,
+    minLines: Int = 1,
+    singleLine: Boolean = false,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+) {
+    Column(
+        modifier
+            .fillMaxWidth()
+            .neumorphInset(corner = 14.dp, profundidad = 7.dp, fondo = Surface)
+            .border(1.dp, Border, RoundedCornerShape(14.dp))
+            .padding(horizontal = 14.dp, vertical = 11.dp)
+    ) {
+        Text(
+            etiqueta.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = TextMuted
+        )
+        Spacer(Modifier.height(4.dp))
+        Box(Modifier.fillMaxWidth()) {
+            if (valor.isEmpty()) {
+                Text(
+                    "Escribe aquí…",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextMuted
+                )
+            }
+            BasicTextField(
+                value = valor,
+                onValueChange = onCambia,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = TextPrimary),
+                singleLine = singleLine,
+                minLines = minLines,
+                keyboardOptions = keyboardOptions,
+                cursorBrush = SolidColor(Primary),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }
 
@@ -507,7 +572,8 @@ fun FilaArchivo(
 fun BarraInferior(navController: NavController, rutaActual: String) {
     NavigationBar(
         containerColor = Surface,
-        tonalElevation = 0.dp
+        tonalElevation = 0.dp,
+        modifier = Modifier.neumorphRaised(corner = 0.dp, elevacion = 5.dp, fondo = Surface)
     ) {
         val items = listOf(
             Triple("Inicio", Icons.Filled.Home, Screen.Home.route),

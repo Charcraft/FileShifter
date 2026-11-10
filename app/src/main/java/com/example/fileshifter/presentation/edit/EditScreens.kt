@@ -53,6 +53,7 @@ import com.example.fileshifter.data.model.TipoEdicion
 import com.example.fileshifter.data.model.formatearTamano
 import com.example.fileshifter.navigation.Screen
 import com.example.fileshifter.presentation.common.BotonPrincipal
+import com.example.fileshifter.presentation.common.CampoNeumorph
 import com.example.fileshifter.presentation.common.ChipIcono
 import com.example.fileshifter.presentation.common.ContenidoResponsive
 import com.example.fileshifter.presentation.common.FilaArchivo
@@ -336,33 +337,30 @@ fun EditModeScreen(navController: NavController) {
                             TipoEdicion.ELIMINAR -> Tarjeta {
                                 Text("Páginas a eliminar", style = MaterialTheme.typography.titleMedium)
                                 Spacer(Modifier.height(8.dp))
-                                OutlinedTextField(
-                                    value = estado.opciones.paginas,
-                                    onValueChange = vm::onPaginas,
-                                    placeholder = { Text("Ejemplo: 2,4-6") },
-                                    modifier = Modifier.fillMaxWidth()
+                                CampoNeumorph(
+                                    valor = estado.opciones.paginas,
+                                    onCambia = vm::onPaginas,
+                                    etiqueta = "Ejemplo: 2,4-6"
                                 )
                             }
 
                             TipoEdicion.REORDENAR -> Tarjeta {
                                 Text("Nuevo orden de páginas", style = MaterialTheme.typography.titleMedium)
                                 Spacer(Modifier.height(8.dp))
-                                OutlinedTextField(
-                                    value = estado.opciones.orden,
-                                    onValueChange = vm::onOrden,
-                                    placeholder = { Text("Ejemplo: 3,1,2") },
-                                    modifier = Modifier.fillMaxWidth()
+                                CampoNeumorph(
+                                    valor = estado.opciones.orden,
+                                    onCambia = vm::onOrden,
+                                    etiqueta = "Ejemplo: 3,1,2"
                                 )
                             }
 
                             TipoEdicion.MARCA_AGUA -> Tarjeta {
                                 Text("Texto de la marca", style = MaterialTheme.typography.titleMedium)
                                 Spacer(Modifier.height(8.dp))
-                                OutlinedTextField(
-                                    value = estado.opciones.textoMarcaAgua,
-                                    onValueChange = vm::onMarcaAgua,
-                                    placeholder = { Text("Ejemplo: COPIA") },
-                                    modifier = Modifier.fillMaxWidth()
+                                CampoNeumorph(
+                                    valor = estado.opciones.textoMarcaAgua,
+                                    onCambia = vm::onMarcaAgua,
+                                    etiqueta = "Ejemplo: COPIA"
                                 )
                             }
 
