@@ -6,9 +6,7 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
 
-/** Genera codigos QR y de barras 100% offline con ZXing. */
 object GeneradorCodigos {
-
     fun qr(texto: String, lado: Int = 720): Bitmap = dibujar(
         MultiFormatWriter().encode(texto, BarcodeFormat.QR_CODE, lado, lado, mapOf(EncodeHintType.MARGIN to 1))
     )

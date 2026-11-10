@@ -14,12 +14,7 @@ import com.example.fileshifter.data.source.Archivos
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import java.io.File
 
-/**
- * Application: crea el contenedor de dependencias una sola vez.
- * Es el equivalente manual a Hilt, para que la inyeccion se vea clara en clase.
- */
 class FileShifterApp : Application() {
-
     lateinit var container: AppContainer
         private set
 
@@ -30,9 +25,7 @@ class FileShifterApp : Application() {
     }
 }
 
-/** Contenedor de dependencias de la app. */
 class AppContainer(context: Context) {
-
     private val baseDatos = AppDatabase.obtener(context)
 
     val carpetaSalida: File = Archivos.carpetaSalida(context)

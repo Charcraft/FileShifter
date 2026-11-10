@@ -1,5 +1,7 @@
 package com.example.fileshifter.presentation.qr
 
+import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -83,7 +86,6 @@ import com.example.fileshifter.ui.theme.TextPrimary
 import com.example.fileshifter.ui.theme.TextSecondary
 import java.io.File
 
-/** F8 - Lector y generador de QR con las pestañas del prototipo (P14). */
 @Composable
 fun QrScreen(navController: NavController) {
     val vm: QrViewModel = appViewModel { QrViewModel(it.documentoRepository, it.historialRepository, it.ocrService) }
@@ -105,7 +107,7 @@ fun QrScreen(navController: NavController) {
         },
         barraInferior = { BarraInferior(navController, Screen.Qr.route) }
     ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
+        Column(Modifier.padding(padding).fillMaxSize().imePadding()) {
             TabRow(
                 selectedTabIndex = pestana,
                 containerColor = MaterialTheme.colorScheme.surface,
@@ -176,6 +178,7 @@ private fun EscanearTab(
     onUsar: () -> Unit,
     onCodigo: (String) -> Unit
 ) {
+    val contexto = androidx.compose.ui.platform.LocalContext.current
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
     ) {
@@ -194,12 +197,12 @@ private fun EscanearTab(
                         val largo = 30.dp.toPx()
                         val color = Primary
                         val grosor = 3.dp.toPx()
-                        // Esquinas superiores
+
                         drawLine(color, Offset(margen, margen + largo), Offset(margen, margen), grosor)
                         drawLine(color, Offset(margen, margen), Offset(margen + largo, margen), grosor)
                         drawLine(color, Offset(size.width - margen - largo, margen), Offset(size.width - margen, margen), grosor)
                         drawLine(color, Offset(size.width - margen, margen), Offset(size.width - margen, margen + largo), grosor)
-                        // Esquinas inferiores
+
                         drawLine(color, Offset(margen, size.height - margen - largo), Offset(margen, size.height - margen), grosor)
                         drawLine(color, Offset(margen, size.height - margen), Offset(margen + largo, size.height - margen), grosor)
                         drawLine(color, Offset(size.width - margen - largo, size.height - margen), Offset(size.width - margen, size.height - margen), grosor)
@@ -239,6 +242,18 @@ private fun EscanearTab(
                         Text(escaneado, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                         Spacer(Modifier.height(10.dp))
                         BotonPrincipal(texto = "Usar para generar", onClick = onUsar)
+
+                        val url = escaneado.orEmpty()
+                        val esEnlace = url.startsWith("http://", true) ||
+                            url.startsWith("https://", true)
+                        if (esEnlace) {
+                            Spacer(Modifier.height(8.dp))
+                            BotonSecundario(
+                                texto = "Abrir enlace en el navegador",
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { abrirEnlace(contexto, url) }
+                            )
+                        }
                     }
                 }
                 Spacer(Modifier.height(16.dp))
@@ -389,7 +404,7 @@ private fun HistorialTab(
                                                 Text(
                                                     "${formatearTamano(item.tamanoBytes)} · ${formatearFecha(item.creadoEn)}",
                                                     style = MaterialTheme.typography.bodySmall,
-                                                    color = TextMuted
+                                                    color = TextSecondary
                                                 )
                                             }
                                         }
@@ -411,5 +426,14 @@ private fun HistorialTab(
         ) {
             Text("Ver historial completo", color = Primary)
         }
+    }
+}
+
+private fun abrirEnlace(contexto: Context, url: String) {
+    runCatching {
+        contexto.startActivity(
+            Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
     }
 }

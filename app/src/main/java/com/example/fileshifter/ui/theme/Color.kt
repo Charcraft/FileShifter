@@ -2,10 +2,6 @@ package com.example.fileshifter.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-/**
- * Paleta tomada del prototipo de Figma:
- * azul hielo de fondo, tarjetas blancas y barra superior azul marino.
- */
 val Navy = Color(0xFF0C3B5E)
 val NavyDark = Color(0xFF082C46)
 val NavyBadge = Color(0xFF0C4A6E)
@@ -32,10 +28,6 @@ val AmberText = Color(0xFF8A6100)
 val CameraDark = Color(0xFF080F1A)
 val CameraBar = Color(0xFF111A28)
 
-/**
- * Tonos para el acabado neumórfico. No cambian la paleta del prototipo:
- * solo definen la luz y la sombra de los relieves.
- */
 val NeumorphBase = Color(0xFFF6FAFD)
 val NeumorphLight = Color(0xFFFFFFFF)
 val NeumorphDark = Color(0xFFCBD9E7)

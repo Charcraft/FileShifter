@@ -4,13 +4,7 @@ import android.content.Context
 import android.net.Uri
 import java.util.zip.ZipInputStream
 
-/**
- * Extrae texto de DOCX, XLSX y PPTX sin dependencias pesadas:
- * un archivo de Office es un ZIP con XML dentro. Solo se lee el texto,
- * que es justo el alcance prometido ("Office basico, sin macros").
- */
 object OfficeTextExtractor {
-
     fun extraer(context: Context, uri: Uri, nombre: String): String {
         val extension = nombre.substringAfterLast('.', "").lowercase()
         return when (extension) {
@@ -20,8 +14,6 @@ object OfficeTextExtractor {
             else -> ""
         }
     }
-
-    // ------------------------------------------------------------------ DOCX
 
     private fun docx(context: Context, uri: Uri): String {
         val xml = leerEntrada(context, uri, "word/document.xml") ?: return ""
@@ -41,8 +33,6 @@ object OfficeTextExtractor {
         }
         return texto.joinToString("\n").trim()
     }
-
-    // ------------------------------------------------------------------ XLSX
 
     private fun xlsx(context: Context, uri: Uri): String {
         val compartidos = leerEntrada(context, uri, "xl/sharedStrings.xml")
@@ -86,8 +76,6 @@ object OfficeTextExtractor {
         return salida.toString().trim()
     }
 
-    // ------------------------------------------------------------------ PPTX
-
     private fun pptx(context: Context, uri: Uri): String {
         val diapositivas = leerEntradas(context, uri, "ppt/slides/slide")
             .toSortedMap(compareBy { it.filter(Char::isDigit).toIntOrNull() ?: 0 })
@@ -107,9 +95,6 @@ object OfficeTextExtractor {
         return salida.toString().trim()
     }
 
-    // ------------------------------------------------------------------ HTML / texto
-
-    /** Limpia etiquetas HTML y deja texto legible. */
     fun htmlATexto(html: String): String = html
         .replace(Regex("(?is)<(script|style)[^>]*>.*?</\\1>"), "")
         .replace(Regex("(?i)<br\\s*/?>"), "\n")
@@ -118,8 +103,6 @@ object OfficeTextExtractor {
         .let { decodificar(it) }
         .replace(Regex("\n{3,}"), "\n\n")
         .trim()
-
-    // ------------------------------------------------------------------ Auxiliares
 
     private fun leerEntrada(context: Context, uri: Uri, nombreEntrada: String): String? {
         context.contentResolver.openInputStream(uri)?.use { entrada ->

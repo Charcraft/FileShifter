@@ -11,11 +11,7 @@ import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-/**
- * OCR offline con ML Kit (reconoce texto en espanol sin enviar la imagen a la nube).
- */
 class OcrService(private val context: Context) {
-
     private val cliente = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     private val lector = com.google.mlkit.vision.barcode.BarcodeScanning.getClient()
 
@@ -29,7 +25,6 @@ class OcrService(private val context: Context) {
         }
     }
 
-    /** Lee un QR o código de barras desde una imagen de la galería. */
     suspend fun leerCodigo(archivo: File): String? {
         val bitmap = BitmapFactory.decodeFile(archivo.absolutePath) ?: return null
         return try {
@@ -41,7 +36,6 @@ class OcrService(private val context: Context) {
     }
 }
 
-/** Convierte un Task de Google Play Services en una funcion suspendida. */
 suspend fun <T> Task<T>.esperar(): T = suspendCancellableCoroutine { continuacion ->
     addOnSuccessListener { resultado ->
         if (continuacion.isActive) continuacion.resume(resultado)

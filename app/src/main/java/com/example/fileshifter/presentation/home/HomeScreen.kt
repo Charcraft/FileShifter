@@ -77,7 +77,6 @@ private data class Herramienta(
     val ruta: String?
 )
 
-/** P2 del prototipo: herramientas, recientes y navegación inferior. */
 @Composable
 fun HomeScreen(navController: NavController) {
     val vm: HomeViewModel = appViewModel { HomeViewModel(it.historialRepository) }

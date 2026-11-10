@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -63,6 +64,7 @@ import com.example.fileshifter.presentation.common.Tarjeta
 import com.example.fileshifter.presentation.common.TarjetaResultado
 import com.example.fileshifter.presentation.common.appViewModel
 import com.example.fileshifter.presentation.common.iconoDeArchivo
+import com.example.fileshifter.ui.theme.AmberText
 import com.example.fileshifter.ui.theme.Background
 import com.example.fileshifter.ui.theme.Border
 import com.example.fileshifter.ui.theme.Primary
@@ -87,8 +89,6 @@ private fun iconoEdicion(tipo: TipoEdicion): ImageVector = when (tipo) {
     TipoEdicion.REORDENAR -> Icons.Filled.SwapVert
     TipoEdicion.MARCA_AGUA -> Icons.Filled.BrandingWatermark
 }
-
-// ------------------------------------------------------------------ Paso 1
 
 @Composable
 fun EditPickerScreen(navController: NavController) {
@@ -201,8 +201,6 @@ fun EditPickerScreen(navController: NavController) {
     }
 }
 
-// ------------------------------------------------------------------ Paso 2
-
 @Composable
 fun EditTypeScreen(navController: NavController) {
     val vm = editViewModel(navController)
@@ -283,13 +281,12 @@ private fun TarjetaTipo(
     }
 }
 
-// ------------------------------------------------------------------ Paso 3
-
 @Composable
 fun EditModeScreen(navController: NavController) {
     val vm = editViewModel(navController)
     val estado by vm.estado.collectAsStateWithLifecycle()
     val tipo = estado.tipo
+    val unirInvalido = tipo == TipoEdicion.UNIR && estado.archivos.size < 2
 
     PantallaBase(titulo = tipo?.etiqueta ?: "Editar", onVolver = { navController.popBackStack() }) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
@@ -309,12 +306,22 @@ fun EditModeScreen(navController: NavController) {
                                         color = TextPrimary
                                     )
                                     Text(
-                                        "${estado.archivos.size} PDF seleccionado(s)",
+                                        if (estado.archivos.size == 1) "1 PDF seleccionado"
+                                        else "${estado.archivos.size} PDF seleccionados",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = TextMuted
+                                        color = TextSecondary
                                     )
                                 }
                             }
+                        }
+
+                        if (unirInvalido) {
+                            Spacer(Modifier.height(10.dp))
+                            Text(
+                                "Para unir necesitas al menos dos PDF. Vuelve al paso 1 y añade otro.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AmberText
+                            )
                         }
 
                         Spacer(Modifier.height(12.dp))
@@ -399,10 +406,15 @@ fun EditModeScreen(navController: NavController) {
             }
 
             Surface(color = Background) {
-                Column(Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Column(
+                    Modifier
+                        .navigationBarsPadding()
+                        .imePadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
                     BotonPrincipal(
                         texto = if (estado.cargando) "Aplicando…" else "Aplicar · ${tipo?.etiqueta ?: ""}",
-                        enabled = tipo != null && !estado.cargando && estado.archivos.isNotEmpty(),
+                        enabled = tipo != null && !estado.cargando && estado.archivos.isNotEmpty() && !unirInvalido,
                         onClick = { vm.aplicar() }
                     )
                 }

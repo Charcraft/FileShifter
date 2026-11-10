@@ -57,7 +57,6 @@ import com.example.fileshifter.ui.theme.TextMuted
 import com.example.fileshifter.ui.theme.TextPrimary
 import com.example.fileshifter.ui.theme.TextSecondary
 
-/** F4 - Corrector con la vista del prototipo (P8). */
 @Composable
 fun CorrectorScreen(navController: NavController) {
     val vm: CorrectorViewModel = appViewModel { CorrectorViewModel() }

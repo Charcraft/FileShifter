@@ -15,13 +15,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-/** Ajustes del flujo + uso de almacenamiento de la carpeta FileShifter/. */
 class SettingsViewModel(
     private val repositorio: AjustesRepository,
     private val historial: HistorialRepository,
     private val carpeta: File
 ) : ViewModel() {
-
     val ajustes: StateFlow<AjustesFlujo> = repositorio.ajustes.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

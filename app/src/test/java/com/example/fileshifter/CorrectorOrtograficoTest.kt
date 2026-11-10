@@ -5,12 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Pruebas de la logica pura del Corrector.
- * Se ejecutan en la JVM, sin emulador: ./gradlew testDebugUnitTest
- */
 class CorrectorOrtograficoTest {
-
     @Test
     fun `detecta tildes faltantes`() {
         val sugerencias = CorrectorOrtografico.revisar("aqui tambien falta informacion")

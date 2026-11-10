@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Estado de Imagen a PDF Rápida (F2). */
 data class ImageToPdfUiState(
     val imagenes: List<ArchivoSeleccionado> = emptyList(),
     val unir: Boolean = true,
@@ -21,7 +20,6 @@ data class ImageToPdfUiState(
 )
 
 class ImageToPdfViewModel(private val repositorio: DocumentoRepository) : ViewModel() {
-
     private val _estado = MutableStateFlow(ImageToPdfUiState())
     val estado: StateFlow<ImageToPdfUiState> = _estado.asStateFlow()
 
@@ -29,6 +27,14 @@ class ImageToPdfViewModel(private val repositorio: DocumentoRepository) : ViewMo
         viewModelScope.launch {
             val imagenes = repositorio.describir(uris)
             _estado.update { it.copy(imagenes = imagenes, resultado = null) }
+        }
+    }
+
+    fun agregarImagenes(uris: List<String>) {
+        if (uris.isEmpty()) return
+        viewModelScope.launch {
+            val nuevas = repositorio.describir(uris)
+            _estado.update { it.copy(imagenes = it.imagenes + nuevas, resultado = null) }
         }
     }
 

@@ -1,9 +1,5 @@
 package com.example.fileshifter.data.model
 
-/**
- * Referencia bibliografica recuperada del catalogo Crossref.
- * Se guarda ya formateada para poder consultarla sin conexion.
- */
 data class Referencia(
     val doi: String,
     val titulo: String,
@@ -12,8 +8,6 @@ data class Referencia(
     val fuente: String,
     val tipo: String
 ) {
-
-    /** Cita lista para pegar en la bibliografia (APA 7). */
     fun citaApa(): String {
         val partes = mutableListOf<String>()
         if (autores.isNotBlank()) partes.add("$autores.")
@@ -24,7 +18,6 @@ data class Referencia(
         return partes.joinToString(" ").replace("..", ".")
     }
 
-    /** Nombre del tipo de publicacion tal como lo entiende el alumno. */
     fun tipoLegible(): String = when (tipo) {
         "journal-article" -> "Articulo"
         "book" -> "Libro"

@@ -10,15 +10,9 @@ import com.example.fileshifter.data.model.AjustesFlujo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-/** DataStore de preferencias (un solo archivo para toda la app). */
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "fileshifter_ajustes")
 
-/**
- * Ajustes del flujo configurable: sugerir Corrector, Modo Entrega y Validador.
- * Se guardan con DataStore para que sobrevivan al cierre de la app.
- */
 class AjustesRepository(private val context: Context) {
-
     private object Claves {
         val CORRECTOR = booleanPreferencesKey("sugerir_corrector")
         val ENTREGA = booleanPreferencesKey("sugerir_entrega")

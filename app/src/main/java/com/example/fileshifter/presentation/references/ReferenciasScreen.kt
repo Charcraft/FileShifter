@@ -65,10 +65,6 @@ import com.example.fileshifter.ui.theme.TextMuted
 import com.example.fileshifter.ui.theme.TextPrimary
 import com.example.fileshifter.ui.theme.TextSecondary
 
-/**
- * F9 - Referencias: busca bibliografia en Crossref y la guarda para citarla
- * en el Modo Entrega. Es la funcion que usa la conexion a internet de la app.
- */
 @Composable
 fun ReferenciasScreen(navController: NavController) {
     val vm: ReferenciasViewModel = appViewModel { ReferenciasViewModel(it.referenciasRepository) }
@@ -91,7 +87,6 @@ fun ReferenciasScreen(navController: NavController) {
 
             ContenidoResponsive {
                 Column(Modifier.padding(16.dp)) {
-
                     Tarjeta {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             ChipIcono(Icons.Filled.MenuBook, tamano = 42.dp)

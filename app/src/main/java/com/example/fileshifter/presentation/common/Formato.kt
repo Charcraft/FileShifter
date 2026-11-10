@@ -12,7 +12,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-/** "Hoy, 11:30" o "14 sep" según el prototipo. */
 fun formatearFecha(millis: Long): String {
     val ahora = Calendar.getInstance()
     val fecha = Calendar.getInstance().apply { timeInMillis = millis }
@@ -26,7 +25,6 @@ fun formatearFecha(millis: Long): String {
     }
 }
 
-/** Icono según la extensión del archivo. */
 fun iconoDeArchivo(nombre: String): ImageVector = when (nombre.substringAfterLast('.', "").lowercase()) {
     "pdf", "doc", "docx", "txt" -> Icons.Filled.Description
     "png", "jpg", "jpeg", "webp", "heic", "bmp" -> Icons.Filled.Image

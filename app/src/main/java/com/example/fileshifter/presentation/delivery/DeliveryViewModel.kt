@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Estado compartido por los tres pasos del Modo Entrega (F5). */
 data class DeliveryUiState(
     val plantilla: PlantillaEntrega = PlantillaEntrega.ESCOLAR,
     val datos: DatosEntrega = DatosEntrega(),
@@ -24,7 +23,6 @@ data class DeliveryUiState(
 }
 
 class DeliveryViewModel(private val repositorio: DocumentoRepository) : ViewModel() {
-
     private val _estado = MutableStateFlow(DeliveryUiState())
     val estado: StateFlow<DeliveryUiState> = _estado.asStateFlow()
 

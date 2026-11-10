@@ -1,17 +1,5 @@
 package com.example.fileshifter.domain
 
-/**
- * Corrector ortografico offline para espanol.
- *
- * No es IA: usa reglas deterministas y un diccionario de acentuacion.
- * - palabras repetidas ("la la")
- * - palabras sin tilde de uso comun (aqui -> aquí, tambien -> también)
- * - terminaciones -cion / -sion sin tilde
- * - errores frecuentes (havia -> había, haiga -> haya)
- * - mayuscula al inicio de oracion
- *
- * Es lógica pura: se prueba con JUnit, sin Android.
- */
 data class Sugerencia(
     val inicio: Int,
     val fin: Int,
@@ -21,8 +9,6 @@ data class Sugerencia(
 )
 
 object CorrectorOrtografico {
-
-    /** Palabras que siempre llevan tilde y suelen escribirse sin ella. */
     private val acentos = mapOf(
         "aqui" to "aquí",
         "asi" to "así",
@@ -59,7 +45,6 @@ object CorrectorOrtografico {
         "aplicacion" to "aplicación"
     )
 
-    /** Errores frecuentes que no siguen una regla. */
     private val errores = mapOf(
         "havia" to "había",
         "haigan" to "hayan",
@@ -79,7 +64,6 @@ object CorrectorOrtografico {
         "renocido" to "reconocido"
     )
 
-    /** Palabras que, respetando la regla, no se corrigen (evita falsos positivos). */
     private val excepciones = setOf(
         "decision", "vision", "mision", "television", "revision", "division", "sesion", "version"
     )
@@ -88,7 +72,6 @@ object CorrectorOrtografico {
         if (texto.isBlank()) return emptyList()
         val sugerencias = mutableListOf<Sugerencia>()
 
-        // 1. Palabras repetidas: "la la", "de de"
         Regex("\\b(\\p{L}+)(\\s+)(\\1)\\b", RegexOption.IGNORE_CASE).findAll(texto).forEach { match ->
             val segunda = match.groups[3]!!
             sugerencias += Sugerencia(
@@ -100,7 +83,6 @@ object CorrectorOrtografico {
             )
         }
 
-        // 2. Palabras token por token
         Regex("\\p{L}+").findAll(texto).forEach { match ->
             val palabra = match.value
             val minuscula = palabra.lowercase()
@@ -124,7 +106,6 @@ object CorrectorOrtografico {
                 }
             }
 
-            // 3. Mayuscula al inicio de oracion
             val anterior = texto.take(match.range.first).trimEnd()
             val inicioOracion = anterior.isEmpty() ||
                 anterior.endsWith('.') || anterior.endsWith('?') || anterior.endsWith('!')
@@ -144,7 +125,6 @@ object CorrectorOrtografico {
             .sortedBy { it.inicio }
     }
 
-    /** -cion / -sion sin tilde (informacion -> información). */
     private fun reglaTilde(palabra: String): String? {
         if (palabra in excepciones) return null
         return when {
@@ -161,7 +141,6 @@ object CorrectorOrtografico {
         else -> correccion
     }
 
-    /** Aplica las sugerencias de una sola vez (de atras hacia adelante). */
     fun aplicar(texto: String, sugerencias: List<Sugerencia>): String {
         val ordenadas = sugerencias.sortedByDescending { it.inicio }
         var resultado = texto

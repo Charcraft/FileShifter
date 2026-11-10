@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,12 +32,14 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -62,11 +65,11 @@ import com.example.fileshifter.ui.theme.TextMuted
 import com.example.fileshifter.ui.theme.TextPrimary
 import com.example.fileshifter.ui.theme.TextSecondary
 
-/** F6 - Validador con la vista del prototipo (P12). */
 @Composable
 fun ValidatorScreen(navController: NavController) {
     val vm: ValidatorViewModel = appViewModel { ValidatorViewModel(it.documentoRepository) }
     val estado by vm.estado.collectAsStateWithLifecycle()
+    val portapapeles = androidx.compose.ui.platform.LocalClipboardManager.current
     val contexto = androidx.compose.ui.platform.LocalContext.current
 
     val selector = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -78,7 +81,6 @@ fun ValidatorScreen(navController: NavController) {
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                 ContenidoResponsive {
                     Column(Modifier.padding(16.dp)) {
-
                         if (estado.reporte == null) {
                             Tarjeta {
                                 Text(
@@ -209,7 +211,22 @@ fun ValidatorScreen(navController: NavController) {
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Spacer(Modifier.height(4.dp))
-                                        Text("Hash SHA-256", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                "Hash SHA-256",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = TextSecondary
+                                            )
+                                            Spacer(Modifier.width(6.dp))
+                                            TextButton(
+                                                onClick = {
+                                                    portapapeles.setText(AnnotatedString(reporte.hash))
+                                                },
+                                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                                            ) {
+                                                Text("Copiar", style = MaterialTheme.typography.labelSmall, color = Primary)
+                                            }
+                                        }
                                         Text(
                                             "${reporte.hash.take(6)}…${reporte.hash.takeLast(4)}",
                                             style = MaterialTheme.typography.bodySmall,

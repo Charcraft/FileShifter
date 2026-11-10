@@ -25,7 +25,6 @@ import com.example.fileshifter.presentation.settings.SettingsScreen
 import com.example.fileshifter.presentation.splash.SplashScreen
 import com.example.fileshifter.presentation.validator.ValidatorScreen
 
-/** Rutas de navegación de la app (una sola Activity, pila de navegación). */
 sealed class Screen(val route: String, val label: String) {
     data object Splash : Screen("splash", "Bienvenida")
     data object Home : Screen("home", "Inicio")
@@ -71,14 +70,12 @@ fun AppNav(navController: NavHostController) {
         composable(Screen.Convert.route) { ConvertScreen(navController) }
         composable(Screen.Image.route) { ImageToPdfScreen(navController) }
 
-        // Flujo Editar PDF: un grafo con ViewModel compartido entre los 3 pasos.
         navigation(startDestination = Screen.EditPicker.route, route = Screen.EditGraph.route) {
             composable(Screen.EditPicker.route) { EditPickerScreen(navController) }
             composable(Screen.EditType.route) { EditTypeScreen(navController) }
             composable(Screen.EditMode.route) { EditModeScreen(navController) }
         }
 
-        // Flujo Modo Entrega: mismo patrón.
         navigation(startDestination = Screen.Delivery1.route, route = Screen.DeliveryGraph.route) {
             composable(Screen.Delivery1.route) { DeliveryStep1Screen(navController) }
             composable(Screen.Delivery2.route) { DeliveryStep2Screen(navController) }

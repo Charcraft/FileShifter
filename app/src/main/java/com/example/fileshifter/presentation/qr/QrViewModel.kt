@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 
-/** Estado de QR / Barras (F8). */
 data class QrUiState(
     val texto: String = "",
     val esQr: Boolean = true,
@@ -31,7 +30,6 @@ class QrViewModel(
     private val historial: HistorialRepository,
     private val ocr: OcrService
 ) : ViewModel() {
-
     private val _estado = MutableStateFlow(QrUiState())
     val estado: StateFlow<QrUiState> = _estado.asStateFlow()
 

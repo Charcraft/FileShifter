@@ -19,8 +19,10 @@ un catálogo abierto cuando hay conexión.
 | --- | --- |
 | `./gradlew assembleDebug` | ✅ compila |
 | Instalación en dispositivo real (SM-A525M, Android 14) | ✅ |
-| Pruebas unitarias (`testDebugUnitTest`) | ✅ 6/6 |
-| Pruebas en dispositivo (`connectedDebugAndroidTest`) | ✅ 6/6 |
+| Pruebas unitarias (`testDebugUnitTest`) | ✅ 10/10 (corrector y formatos) |
+| Pruebas de extremo a extremo (`connectedDebugAndroidTest`) | ✅ 25/25 en el dispositivo |
+| Conversión PDF → DOCX y DOCX → PDF verificada | ✅ contenido conservado |
+| Archivos guardados en `Documentos/FileShifter` | ✅ visibles en el explorador |
 | Consulta a Crossref con resultados en pantalla | ✅ verificado |
 | Respaldo local del buscador sin conexión | ✅ verificado en modo avión |
 | Conversión imagen → PDF verificada | ✅ PDF A4 de 1 página con la imagen |
@@ -37,14 +39,14 @@ Evidencias de la ejecución en el teléfono: **[docs/evidencias](docs/evidencias
 
 | # | Función | Estado |
 | --- | --- | --- |
-| F1 | Convertir universal (PDF, DOCX, XLSX, PPTX, TXT, CSV, HTML, imágenes → PDF/TXT) | ✅ |
-| F2 | Imagen a PDF (unir o uno por imagen) | ✅ |
+| F1 | Convertir universal (PDF, DOCX, XLSX, PPTX, TXT, CSV, HTML, imágenes → PDF, TXT o DOCX) | ✅ |
+| F2 | Imagen a PDF (unir o uno por imagen, desde galería o con la cámara) | ✅ |
 | F3 | Editar PDF (unir, dividir, comprimir, rotar, eliminar, reordenar, marca de agua) | ✅ |
 | F4 | Corrector ortográfico offline (tildes, repeticiones, errores frecuentes) | 🟡 básico |
 | F5 | Modo Entrega (3 plantillas, formulario, vista previa, PDF) | 🟡 sin importar plantilla |
 | F6 | Validador con semáforo, SHA-256 y QR | ✅ |
 | F7 | Escáner con cámara + OCR + PDF | 🟡 sin detección de bordes |
-| F8 | QR / barras (leer, generar, historial) | ✅ |
+| F8 | QR / barras (leer, generar, historial y abrir el enlace leído) | ✅ |
 | F9 | **Referencias bibliográficas** (Crossref, cita APA y respaldo offline) | ✅ |
 
 Extras: **Historial** con Room, **Ajustes** con DataStore y flujo configurable
@@ -184,6 +186,36 @@ Requisitos: Android Studio, Android SDK 35, **JDK 21 para Gradle**.
 ```
 
 APK resultante: `app/build/outputs/apk/debug/app-debug.apk`.
+
+---
+
+## Pruebas
+
+Las pruebas instrumentadas corren en el teléfono y trabajan con archivos reales:
+escriben el origen, convierten con el repositorio y vuelven a abrir el resultado
+para comprobar su contenido (páginas del PDF, texto del DOCX, hash SHA-256,
+lectura del QR con ML Kit).
+
+| Suite | Casos | Qué cubre |
+| --- | --- | --- |
+| `ConversionE2ETest` | 7 | DOCX, TXT, HTML y CSV a PDF; PDF a TXT y a DOCX; varios archivos |
+| `FlujoDocumentosE2ETest` | 6 | Imagen a PDF, guardado en Documentos, historial, validador, QR y barras |
+| `NavegacionE2ETest` | 6 | Bienvenida, inicio y apertura de cada herramienta |
+| `PdfEngineTest` | 5 | Unir, dividir, rotar, marca de agua, rangos de páginas |
+| `FormatosTest` (JVM) | 4 | Matriz de conversiones que ofrece la pantalla |
+
+```bash
+./gradlew connectedDebugAndroidTest   # 25 casos en el dispositivo
+```
+
+---
+
+## Guardado de los archivos
+
+Todo lo que genera la app se escribe en su carpeta privada y además se publica en
+**`Documentos/FileShifter`**, para que el archivo se vea desde el explorador, se
+pueda adjuntar a un correo o abrir con Word. En Android 10 o superior se usa
+MediaStore, así que no hacen falta permisos de almacenamiento.
 
 ---
 

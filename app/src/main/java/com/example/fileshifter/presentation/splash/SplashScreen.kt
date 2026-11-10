@@ -43,7 +43,6 @@ import com.example.fileshifter.ui.theme.Primary
 import com.example.fileshifter.ui.theme.TextPrimary
 import com.example.fileshifter.ui.theme.TextSecondary
 
-/** P1 del prototipo: presentación con el logotipo y los tres beneficios. */
 @Composable
 fun SplashScreen(navController: NavController) {
     SistemaBarras(iconosOscuros = true)

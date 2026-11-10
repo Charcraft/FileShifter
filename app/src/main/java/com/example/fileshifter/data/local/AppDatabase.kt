@@ -14,10 +14,6 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Historial de archivos generados.
- * Room guarda solo los metadatos; el archivo vive en la carpeta FileShifter/.
- */
 @Entity(tableName = "historial")
 data class HistorialEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -31,7 +27,6 @@ data class HistorialEntity(
 
 @Dao
 interface HistorialDao {
-
     @Query("SELECT * FROM historial ORDER BY creadoEn DESC")
     fun observarTodo(): Flow<List<HistorialEntity>>
 
@@ -45,10 +40,6 @@ interface HistorialDao {
     suspend fun limpiar()
 }
 
-/**
- * Referencias bibliograficas guardadas por el alumno.
- * Son el respaldo local del buscador: se leen sin conexion.
- */
 @Entity(tableName = "referencia")
 data class ReferenciaEntity(
     @PrimaryKey val doi: String,
@@ -62,7 +53,6 @@ data class ReferenciaEntity(
 
 @Dao
 interface ReferenciaDao {
-
     @Query("SELECT * FROM referencia ORDER BY guardadoEn DESC")
     fun observar(): Flow<List<ReferenciaEntity>>
 
@@ -87,14 +77,11 @@ interface ReferenciaDao {
 
 @Database(entities = [HistorialEntity::class, ReferenciaEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
-
     abstract fun historialDao(): HistorialDao
 
     abstract fun referenciaDao(): ReferenciaDao
 
     companion object {
-
-        /** La version 2 agrega la tabla de referencias bibliograficas. */
         private val MIGRACION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(

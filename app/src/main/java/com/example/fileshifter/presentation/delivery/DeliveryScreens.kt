@@ -65,8 +65,6 @@ private fun deliveryViewModel(navController: NavController): DeliveryViewModel {
     return appViewModel(padre) { DeliveryViewModel(it.documentoRepository) }
 }
 
-// ------------------------------------------------------------------ Paso 1
-
 @Composable
 fun DeliveryStep1Screen(navController: NavController) {
     val vm = deliveryViewModel(navController)
@@ -178,8 +176,6 @@ private fun MiniPlantilla(
     }
 }
 
-// ------------------------------------------------------------------ Paso 2
-
 @Composable
 fun DeliveryStep2Screen(navController: NavController) {
     val vm = deliveryViewModel(navController)
@@ -249,8 +245,6 @@ private fun Campo(etiqueta: String, valor: String, onCambia: (String) -> Unit) {
         singleLine = true
     )
 }
-
-// ------------------------------------------------------------------ Paso 3
 
 @Composable
 fun DeliveryStep3Screen(navController: NavController) {

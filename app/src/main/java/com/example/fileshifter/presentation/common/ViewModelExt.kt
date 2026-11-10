@@ -9,10 +9,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fileshifter.AppContainer
 import com.example.fileshifter.FileShifterApp
 
-/**
- * Obtiene un ViewModel construyendo sus dependencias desde el AppContainer.
- * Asi ninguna pantalla conoce PDFBox, Room ni DataStore.
- */
 @Composable
 inline fun <reified VM : ViewModel> appViewModel(
     viewModelStoreOwner: ViewModelStoreOwner? = null,

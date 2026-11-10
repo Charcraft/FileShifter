@@ -52,7 +52,6 @@ import com.example.fileshifter.ui.theme.TextMuted
 import com.example.fileshifter.ui.theme.TextPrimary
 import com.example.fileshifter.ui.theme.TextSecondary
 
-/** F1 - Convertir Universal con la vista del prototipo (P3). */
 @Composable
 fun ConvertScreen(navController: NavController) {
     val vm: ConvertViewModel = appViewModel { ConvertViewModel(it.documentoRepository) }
@@ -62,7 +61,6 @@ fun ConvertScreen(navController: NavController) {
     }
     val ajustes by ajustesVm.ajustes.collectAsStateWithLifecycle()
 
-    // "No preguntar validación": al terminar, va directo al historial.
     LaunchedEffect(estado.resultado) {
         val resultado = estado.resultado
         if (resultado != null && resultado.exito && ajustes.noPreguntarMas) {
@@ -133,9 +131,13 @@ fun ConvertScreen(navController: NavController) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (estado.salidasDisponibles.isEmpty()) {
                                     Text(
-                                        "Añade un archivo para ver los formatos disponibles",
+                                        if (estado.archivos.isEmpty()) {
+                                            "Añade un archivo para ver los formatos disponibles."
+                                        } else {
+                                            "Este formato no se puede convertir aquí. Prueba con PDF, Word, Excel, PowerPoint, texto o imágenes."
+                                        },
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = TextMuted
+                                        color = TextSecondary
                                     )
                                 }
                                 estado.salidasDisponibles.forEach { formato ->

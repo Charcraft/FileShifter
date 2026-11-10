@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -38,15 +39,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
+import java.io.File
 import kotlin.math.roundToInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -69,7 +76,6 @@ import com.example.fileshifter.ui.theme.TextMuted
 import com.example.fileshifter.ui.theme.TextPrimary
 import com.example.fileshifter.ui.theme.TextSecondary
 
-/** F2 - Imagen a PDF con la vista del prototipo (P4). */
 @Composable
 fun ImageToPdfScreen(navController: NavController) {
     val vm: ImageToPdfViewModel = appViewModel { ImageToPdfViewModel(it.documentoRepository) }
@@ -77,6 +83,27 @@ fun ImageToPdfScreen(navController: NavController) {
 
     val selector = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
         vm.onImagenesSeleccionadas(uris.map(Uri::toString))
+    }
+
+    val contexto = LocalContext.current
+    var uriFoto by remember { mutableStateOf<Uri?>(null) }
+
+    val camara = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { guardada ->
+        if (guardada) {
+            uriFoto?.let { vm.agregarImagenes(listOf(it.toString())) }
+        }
+    }
+
+    fun tomarFoto() {
+        val carpeta = File(contexto.cacheDir, "fotos").apply { mkdirs() }
+        val destino = File(carpeta, "foto_${System.currentTimeMillis()}.jpg")
+        val uri = FileProvider.getUriForFile(
+            contexto,
+            "${contexto.packageName}.fileprovider",
+            destino
+        )
+        uriFoto = uri
+        camara.launch(uri)
     }
 
     PantallaBase(titulo = "Imagen → PDF", onVolver = { navController.popBackStack() }) { padding ->
@@ -96,6 +123,14 @@ fun ImageToPdfScreen(navController: NavController) {
                                 color = TextPrimary,
                                 modifier = Modifier.weight(1f)
                             )
+                            IconButton(onClick = { tomarFoto() }) {
+                                Icon(
+                                    Icons.Filled.PhotoCamera,
+                                    contentDescription = "Tomar foto",
+                                    tint = Primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                             TextButton(onClick = { selector.launch("image/*") }) {
                                 Text("+  Añadir imágenes", color = Primary)
                             }

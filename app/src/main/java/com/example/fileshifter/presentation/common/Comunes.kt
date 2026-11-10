@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -95,12 +97,6 @@ import com.example.fileshifter.ui.theme.neumorphInset
 import com.example.fileshifter.ui.theme.neumorphRaised
 import java.io.File
 
-// ------------------------------------------------------------------ Barra superior
-
-/**
- * Barra azul marino del prototipo: botón de regreso cuadrado, título en blanco
- * y (en Inicio) el logotipo de la app.
- */
 @Composable
 fun BarraSuperior(
     titulo: String,
@@ -158,13 +154,6 @@ fun BarraSuperior(
     }
 }
 
-// ------------------------------------------------------------------ Estructura
-
-/**
- * Scaffold base con barra superior y barra inferior opcional.
- * Los insets se manejan dentro de cada barra, por eso el Scaffold no los suma
- * otra vez (así la app se ve bien de borde a borde en cualquier dispositivo).
- */
 @Composable
 fun PantallaBase(
     titulo: String,
@@ -190,7 +179,6 @@ fun PantallaBase(
     ) { padding -> contenido(padding) }
 }
 
-/** Centra el contenido en pantallas grandes (tablet, plegables, horizontal). */
 @Composable
 fun ContenidoResponsive(
     modifier: Modifier = Modifier,
@@ -205,9 +193,6 @@ fun ContenidoResponsive(
     }
 }
 
-// ------------------------------------------------------------------ Tiras de información
-
-/** Franja celeste bajo la barra: "• 100% Offline · Sin límites". */
 @Composable
 fun TiraInfo(partes: List<Pair<String, Boolean>>) {
     Row(
@@ -239,7 +224,6 @@ fun TiraInfo(partes: List<Pair<String, Boolean>>) {
     }
 }
 
-/** Migas de pan: "Herramientas › Convertir". */
 @Composable
 fun Migas(partes: List<String>) {
     Row(
@@ -263,7 +247,6 @@ fun Migas(partes: List<String>) {
     }
 }
 
-/** Pasos numerados: 1 Plantilla — 2 Datos — 3 Vista previa. */
 @Composable
 fun Pasos(pasos: List<String>, actual: Int) {
     Row(
@@ -309,8 +292,6 @@ fun Pasos(pasos: List<String>, actual: Int) {
         }
     }
 }
-
-// ------------------------------------------------------------------ Tarjetas y controles
 
 @Composable
 fun Tarjeta(
@@ -361,7 +342,6 @@ fun EncabezadoSeccion(
     }
 }
 
-/** Cuadro celeste con el icono de la función (como en el prototipo). */
 @Composable
 fun ChipIcono(
     icono: ImageVector,
@@ -433,7 +413,6 @@ fun BotonSecundario(
     }
 }
 
-/** Etiqueta pequeña: PDF, IMG, QR... */
 @Composable
 fun EtiquetaTipo(texto: String) {
     Surface(color = PrimaryLight, shape = RoundedCornerShape(6.dp)) {
@@ -446,10 +425,6 @@ fun EtiquetaTipo(texto: String) {
     }
 }
 
-/**
- * Campo de texto limpio (sin relieve): fondo blanco, borde suave y etiqueta.
- * El foco se marca con el borde y el cursor, no con sombras.
- */
 @Composable
 fun CampoTexto(
     valor: String,
@@ -515,7 +490,6 @@ fun OpcionMenu(texto: String, onClick: () -> Unit) {
     DropdownMenuItem(text = { Text(texto) }, onClick = onClick)
 }
 
-/** Fila de archivo con icono, nombre, detalle y botón de quitar. */
 @Composable
 fun FilaArchivo(
     nombre: String,
@@ -581,8 +555,6 @@ fun FilaArchivo(
     }
 }
 
-// ------------------------------------------------------------------ Navegación inferior
-
 @Composable
 fun BarraInferior(navController: NavController, rutaActual: String) {
     NavigationBar(
@@ -620,7 +592,6 @@ fun BarraInferior(navController: NavController, rutaActual: String) {
     }
 }
 
-/** Navega sin apilar copias de la misma pantalla. */
 fun NavController.navegarA(ruta: String) {
     navigate(ruta) {
         launchSingleTop = true
@@ -629,8 +600,7 @@ fun NavController.navegarA(ruta: String) {
     }
 }
 
-// ------------------------------------------------------------------ Resultado
-
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TarjetaResultado(
     resultado: ResultadoConversion,
@@ -677,7 +647,10 @@ fun TarjetaResultado(
             )
         }
         Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
             if (resultado.archivos.isNotEmpty()) {
                 TextButton(
                     onClick = { compartirArchivo(contexto, resultado.archivos.first()) },
@@ -708,7 +681,6 @@ fun TarjetaResultado(
     }
 }
 
-/** Comparte un archivo generado con FileProvider. */
 fun compartirArchivo(context: Context, ruta: String) {
     runCatching {
         val uri = Archivos.uriCompartir(context, ruta)

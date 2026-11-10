@@ -61,7 +61,6 @@ import java.io.File
 
 private val FILTROS = listOf("Todos", "PDF", "IMG", "QR", "DOC", "XLS")
 
-/** Historial con filtros por tipo y filas al estilo del prototipo (P14). */
 @Composable
 fun HistoryScreen(navController: NavController) {
     val vm: HistoryViewModel = appViewModel { HistoryViewModel(it.historialRepository) }

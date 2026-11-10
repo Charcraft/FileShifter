@@ -19,6 +19,8 @@ el **9 de noviembre** al agregar el buscador de referencias (F9).
 | Unitarias | `./gradlew testDebugUnitTest` | ✅ 6/6 |
 | Instrumentadas (PDFBox real) | `./gradlew connectedDebugAndroidTest` | ✅ 6/6 |
 | Instalación | `adb install app-debug.apk` | ✅ en SM-A525M / Android 14 |
+| Pruebas E2E | `./gradlew connectedDebugAndroidTest` | ✅ 25/25 en el dispositivo |
+| Archivos en Documentos | Explorador del teléfono | ✅ `Documentos/FileShifter` |
 | Imagen → PDF | UI real | ✅ `IMG-..._1.pdf`, A4, 1 página, 1 imagen (verificado con PyMuPDF) |
 | Rotar PDF | UI real | ✅ 2 páginas, rotación 180° |
 | Historial | UI real | ✅ registro en Room visible tras reiniciar |
@@ -38,7 +40,8 @@ Los archivos generados se guardan en:
 ### F1 — Convertir universal ✅
 
 - Entrada: PDF, DOCX, XLSX, PPTX, TXT, CSV, HTML, JPG/PNG/WEBP/HEIC.
-- Salida: **PDF** (texto o imágenes) y **TXT** (extracción).
+- Salida: **PDF**, **TXT** (extracción) y **DOCX** (documento de Word con el texto,
+  para regresar un PDF a un formato editable).
 - DOCX/XLSX/PPTX se leen con un extractor ZIP+XML propio: texto y tablas, sin macros
   (exactamente el límite que anuncia la propuesta).
 - **No** convierte PDF → DOCX/XLSX (la propuesta tampoco lo promete: el menú muestra
@@ -47,6 +50,8 @@ Los archivos generados se guardan en:
 ### F2 — Imagen a PDF ✅
 
 - Unir en un solo PDF o generar uno por imagen.
+- Las imágenes se eligen de la galería o se toman en el momento con la cámara del
+  teléfono (botón de cámara en la misma pantalla).
 - Página A4 vertical u horizontal según la orientación de la foto.
 - Imágenes grandes se reducen a 2400 px para no agotar memoria.
 - Control de calidad Baja / Media / Alta (JPEG 60 %, JPEG 82 %, sin pérdida).
@@ -95,12 +100,16 @@ sin tocar la UI.
 
 - ✅ Cámara CameraX a pantalla completa, marco guía, captura, OCR con ML Kit y
   salida a PDF o al corrector. También admite una imagen de la galería.
-- ❌ Detección automática de bordes, corrección de perspectiva, filtros y
-  multipágina: pendiente (requiere un paso de visión por computadora).
+- 🟡 Detección automática de bordes: el detector está integrado y dibuja el marco,
+  pero sus pruebas de esquinas todavía no pasan (error de ~100 px en imágenes de
+  prueba), así que el recorte se sigue haciendo a mano. No se anuncia como
+  terminado.
 
 ### F8 — QR y barras ✅
 
 - Lectura con cámara (ML Kit) y desde una imagen de la galería.
+- Si el código leído es una dirección web, aparece el botón **Abrir enlace en el
+  navegador**, que lanza el sitio en el navegador o en la app correspondiente.
 - Generación de QR y CODE-128 con ZXing.
 - Pestaña de historial de códigos y todo lo generado entra al historial.
 
@@ -154,7 +163,7 @@ selector de archivos de Android en lugar de listar todos los PDF del teléfono;
 | Persistencia | ✅ Room (historial y referencias) y DataStore (ajustes) |
 | Consumo de API | ✅ `ReferenciasRepository` + Retrofit, con caché en Room |
 | Flujos multipaso con estado compartido | ✅ Editar y Entrega con grafo anidado |
-| Pruebas | ✅ 6 unitarias + 6 instrumentadas |
+| Pruebas | ✅ 10 unitarias + 25 instrumentadas de extremo a extremo |
 
 ---
 

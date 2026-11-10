@@ -14,16 +14,6 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/**
- * Neumorphism ("soft UI"): el elemento y el fondo comparten el mismo color y la
- * forma se percibe por dos sombras suaves, una clara (arriba-izquierda) y otra
- * oscura (abajo-derecha). Los elementos hundidos invierten la luz.
- *
- * Se dibuja con capas de rectángulos redondeados en lugar de `shadowLayer`
- * porque esa API se ignora con aceleración por hardware en Android.
- */
-
-/** Superficie elevada (tarjetas, botones, chips). */
 fun Modifier.neumorphRaised(
     corner: Dp = 20.dp,
     elevacion: Dp = 8.dp,
@@ -36,7 +26,6 @@ fun Modifier.neumorphRaised(
     val capas = 14
     val intensidad = 0.05f
 
-    // Sombra oscura hacia abajo-derecha
     for (i in capas downTo 1) {
         val t = i / capas.toFloat()
         val d = alcance * t
@@ -49,7 +38,6 @@ fun Modifier.neumorphRaised(
         )
     }
 
-    // Luz hacia arriba-izquierda
     for (i in capas downTo 1) {
         val t = i / capas.toFloat()
         val d = alcance * t
@@ -62,7 +50,6 @@ fun Modifier.neumorphRaised(
         )
     }
 
-    // Relleno del elemento (tapa el interior de las sombras)
     drawRoundRect(
         color = fondo,
         topLeft = Offset.Zero,
@@ -71,7 +58,6 @@ fun Modifier.neumorphRaised(
     )
 }
 
-/** Superficie hundida (campos de texto, pestañas activas, indicadores). */
 fun Modifier.neumorphInset(
     corner: Dp = 16.dp,
     profundidad: Dp = 6.dp,
@@ -96,7 +82,7 @@ fun Modifier.neumorphInset(
 
     clipPath(camino) {
         drawRect(fondo)
-        // Oscuridad desde arriba-izquierda
+
         drawRect(
             brush = Brush.linearGradient(
                 colors = listOf(sombra.copy(alpha = 0.85f), Color.Transparent),
@@ -104,7 +90,7 @@ fun Modifier.neumorphInset(
                 end = Offset(p * 5f, p * 5f)
             )
         )
-        // Luz desde abajo-derecha
+
         drawRect(
             brush = Brush.linearGradient(
                 colors = listOf(Color.Transparent, luz.copy(alpha = 0.9f)),

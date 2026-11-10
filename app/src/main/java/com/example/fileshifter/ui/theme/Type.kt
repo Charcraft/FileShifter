@@ -6,7 +6,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/** Tipografía del prototipo: títulos compactos y mucho contraste de peso. */
 val Typography = Typography(
     displaySmall = TextStyle(
         fontFamily = FontFamily.Default,

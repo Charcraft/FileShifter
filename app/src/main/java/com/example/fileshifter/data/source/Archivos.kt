@@ -1,7 +1,11 @@
 package com.example.fileshifter.data.source
 
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import androidx.core.content.FileProvider
 import com.example.fileshifter.data.model.ArchivoSeleccionado
@@ -9,13 +13,7 @@ import com.example.fileshifter.data.model.tipoPorNombre
 import java.io.File
 import java.io.FileOutputStream
 
-/**
- * Utilidades de archivos compartidas por los repositorios.
- * Ninguna pantalla usa esta clase directamente: siempre pasa por el Repository.
- */
 object Archivos {
-
-    /** Carpeta publica de la app: Android/data/<paquete>/files/FileShifter */
     fun carpetaSalida(context: Context): File {
         val base = context.getExternalFilesDir(null) ?: context.filesDir
         return File(base, "FileShifter").apply { mkdirs() }
@@ -38,7 +36,7 @@ object Archivos {
                 return cursor.getLong(indice)
             }
         }
-        // Si el proveedor no reporta el tamanio, copiamos a cache para medirlo.
+
         return runCatching {
             context.contentResolver.openInputStream(uri)?.use { it.available().toLong() } ?: 0L
         }.getOrDefault(0L)
@@ -64,13 +62,11 @@ object Archivos {
         return destino
     }
 
-    /** Archivo temporal con el contenido de la Uri (algunos flujos lo necesitan). */
     fun temporal(context: Context, uri: Uri, nombre: String): File {
         val destino = File(context.cacheDir, nombre)
         return copiarA(context, uri, destino)
     }
 
-    /** Uri segura para compartir con FileProvider. */
     fun uriCompartir(context: Context, ruta: String): Uri {
         val archivo = File(ruta)
         return FileProvider.getUriForFile(
@@ -80,7 +76,6 @@ object Archivos {
         )
     }
 
-    /** Nombre unico dentro de la carpeta FileShifter/. */
     fun nombreUnico(context: Context, base: String, extension: String): File {
         val carpeta = carpetaSalida(context)
         var candidato = File(carpeta, "$base.$extension")
@@ -94,4 +89,51 @@ object Archivos {
 
     fun limpiarNombre(nombre: String): String =
         nombre.substringBeforeLast('.').replace(Regex("[^A-Za-z0-9_\\- ]"), "_").trim().ifBlank { "archivo" }
+
+    fun mimeDe(nombre: String): String = when (nombre.substringAfterLast('.', "").lowercase()) {
+        "pdf" -> "application/pdf"
+        "txt" -> "text/plain"
+        "csv" -> "text/csv"
+        "html", "htm" -> "text/html"
+        "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        "xlsx" -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        "pptx" -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        "png" -> "image/png"
+        "jpg", "jpeg" -> "image/jpeg"
+        else -> "application/octet-stream"
+    }
+
+    fun publicarEnDocumentos(context: Context, archivo: File): String? = runCatching {
+        if (!archivo.exists()) return null
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val valores = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, archivo.name)
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeDe(archivo.name))
+                put(
+                    MediaStore.MediaColumns.RELATIVE_PATH,
+                    Environment.DIRECTORY_DOCUMENTS + "/FileShifter"
+                )
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+            val resolver = context.contentResolver
+            val coleccion = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            val uri = resolver.insert(coleccion, valores) ?: return null
+            resolver.openOutputStream(uri)?.use { salida ->
+                archivo.inputStream().use { entrada -> entrada.copyTo(salida) }
+            }
+            valores.clear()
+            valores.put(MediaStore.MediaColumns.IS_PENDING, 0)
+            resolver.update(uri, valores, null, null)
+            "Documentos/FileShifter/${archivo.name}"
+        } else {
+            @Suppress("DEPRECATION")
+            val carpeta = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                "FileShifter"
+            ).apply { mkdirs() }
+            val destino = File(carpeta, archivo.name)
+            archivo.copyTo(destino, overwrite = true)
+            destino.absolutePath
+        }
+    }.getOrNull()
 }

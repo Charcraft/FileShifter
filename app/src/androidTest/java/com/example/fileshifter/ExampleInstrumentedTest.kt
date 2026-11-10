@@ -7,13 +7,8 @@ import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * Prueba de arranque: el Application crea el contenedor de dependencias
- * (repositorios, Room, DataStore) sin errores.
- */
 @RunWith(AndroidJUnit4::class)
 class ExampleInstrumentedTest {
-
     @Test
     fun elContenedorDeDependenciasSeCrea() {
         val contexto = InstrumentationRegistry.getInstrumentation().targetContext

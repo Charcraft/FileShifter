@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Estado del Validador (F6). */
 data class ValidatorUiState(
     val archivo: ArchivoSeleccionado? = null,
     val reporte: ReporteValidacion? = null,
@@ -23,7 +22,6 @@ data class ValidatorUiState(
 )
 
 class ValidatorViewModel(private val repositorio: DocumentoRepository) : ViewModel() {
-
     private val _estado = MutableStateFlow(ValidatorUiState())
     val estado: StateFlow<ValidatorUiState> = _estado.asStateFlow()
 

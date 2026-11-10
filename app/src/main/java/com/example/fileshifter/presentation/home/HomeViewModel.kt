@@ -9,9 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** Inicio muestra las herramientas y los archivos recientes (Room). */
 class HomeViewModel(private val historial: HistorialRepository) : ViewModel() {
-
     val recientes: StateFlow<List<HistorialEntity>> = historial.historial.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

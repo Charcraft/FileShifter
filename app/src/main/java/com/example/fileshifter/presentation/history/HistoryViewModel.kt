@@ -9,9 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** Historial ilimitado de archivos generados, guardado en Room. */
 class HistoryViewModel(private val repositorio: HistorialRepository) : ViewModel() {
-
     val historial: StateFlow<List<HistorialEntity>> = repositorio.historial.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

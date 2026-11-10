@@ -15,10 +15,6 @@ private tailrec fun Context.actividad(): Activity? = when (this) {
     else -> null
 }
 
-/**
- * Ajusta los iconos de la barra de estado: oscuros sobre fondos claros,
- * claros sobre la barra azul marino.
- */
 @Composable
 fun SistemaBarras(iconosOscuros: Boolean) {
     val vista = LocalView.current

@@ -22,24 +22,12 @@ import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
 
-/**
- * Motor PDF basado en PDFBox-Android (100% offline).
- * Solo lo usa el repositorio; la UI nunca llama esta clase directamente.
- */
 object PdfEngine {
-
     private const val ANCHO_TEXTO = 88f
     private const val MARGEN = 50f
     private const val TAMANO_FUENTE = 11f
     private const val INTERLINEADO = 15f
 
-    // ---------------------------------------------------------------- Imagen a PDF
-
-    /**
-     * Convierte una o varias imagenes a PDF.
-     * @param unir true = un solo PDF con una pagina por imagen; false = un PDF por imagen.
-     * @return lista de archivos generados.
-     */
     fun imagenesAPdf(
         context: Context,
         uris: List<Uri>,
@@ -80,6 +68,70 @@ object PdfEngine {
             }
         }
         return generados
+    }
+
+    /**
+     * Arma un PDF con páginas ya escaneadas (recortadas, enderezadas y filtradas).
+     * Cada imagen ocupa la página completa, como en una app de escaneo.
+     */
+    fun paginasEscaneadasAPdf(rutas: List<String>, salida: File): File {
+        val doc = PDDocument()
+        try {
+            rutas.forEach { ruta ->
+                val original = decodificarArchivo(File(ruta)) ?: return@forEach
+                val plano = aplanar(original)
+                if (plano !== original) original.recycle()
+                try {
+                    val horizontal = plano.width > plano.height
+                    val pagina = if (horizontal) {
+                        PDPage(PDRectangle(PDRectangle.A4.height, PDRectangle.A4.width))
+                    } else {
+                        PDPage(PDRectangle.A4)
+                    }
+                    doc.addPage(pagina)
+                    val imagen = JPEGFactory.createFromImage(doc, plano, 0.9f)
+                    val anchoPagina = pagina.mediaBox.width
+                    val altoPagina = pagina.mediaBox.height
+                    val escala = minOf(
+                        anchoPagina / imagen.width,
+                        altoPagina / imagen.height
+                    )
+                    val ancho = imagen.width * escala
+                    val alto = imagen.height * escala
+                    PDPageContentStream(doc, pagina).use { contenido ->
+                        contenido.drawImage(
+                            imagen,
+                            (anchoPagina - ancho) / 2f,
+                            (altoPagina - alto) / 2f,
+                            ancho,
+                            alto
+                        )
+                    }
+                } finally {
+                    plano.recycle()
+                }
+            }
+            doc.documentInformation.title = "Escaneo FileShifter"
+            doc.save(salida)
+        } finally {
+            doc.close()
+        }
+        return salida
+    }
+
+    private fun decodificarArchivo(archivo: File): Bitmap? {
+        if (!archivo.exists()) return null
+        val limites = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(archivo.absolutePath, limites)
+        if (limites.outWidth <= 0 || limites.outHeight <= 0) return null
+        var muestra = 1
+        val mayor = maxOf(limites.outWidth, limites.outHeight)
+        while (mayor / (muestra * 2) > 2800) muestra *= 2
+        val opciones = BitmapFactory.Options().apply {
+            inSampleSize = muestra
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        return BitmapFactory.decodeFile(archivo.absolutePath, opciones)
     }
 
     private fun agregarPaginaConImagen(doc: PDDocument, bitmap: Bitmap, calidad: Int = 2) {
@@ -140,9 +192,6 @@ object PdfEngine {
         }
     }
 
-    // ---------------------------------------------------------------- Texto a PDF
-
-    /** Escribe texto plano en un PDF con varias paginas y ajuste de linea. */
     fun textoAPdf(texto: String, titulo: String, salida: File): File {
         val limpio = sanitizar(texto)
         val lineas = mutableListOf<String>()
@@ -200,9 +249,6 @@ object PdfEngine {
         return resultado
     }
 
-    // ---------------------------------------------------------------- Edicion
-
-    /** Ejecuta la operacion de edicion elegida y devuelve los archivos generados. */
     fun editar(
         context: Context,
         tipo: TipoEdicion,
@@ -333,8 +379,6 @@ object PdfEngine {
         return salida
     }
 
-    // ---------------------------------------------------------------- Lectura y datos
-
     fun pdfATexto(context: Context, uri: Uri): String = abrir(context, uri).use { doc ->
         PDFTextStripper().getText(doc)
     }
@@ -352,11 +396,6 @@ object PdfEngine {
         context.contentResolver.openInputStream(uri)?.use { PDDocument.load(it) }
             ?: error("No se pudo abrir el PDF")
 
-    // ---------------------------------------------------------------- Portada de entrega
-
-    /**
-     * Genera la portada + indice del Modo Entrega con la plantilla elegida.
-     */
     fun portadaEntrega(
         nombrePlantilla: String,
         nombre: String,
@@ -374,7 +413,7 @@ object PdfEngine {
             val alto = pagina.mediaBox.height
 
             PDPageContentStream(doc, pagina).use { contenido ->
-                // Barra superior segun plantilla
+
                 if (nombrePlantilla != "MINIMAL") {
                     contenido.setNonStrokingColor(0.05f, 0.65f, 0.91f)
                     contenido.addRect(0f, alto - 18f, ancho, 18f)
@@ -429,7 +468,6 @@ object PdfEngine {
                     contenido.endText()
                 }
 
-                // Pie
                 contenido.beginText()
                 contenido.setFont(PDType1Font.HELVETICA, 9f)
                 contenido.setNonStrokingColor(0.45f, 0.52f, 0.6f)
@@ -443,9 +481,6 @@ object PdfEngine {
         }
     }
 
-    // ---------------------------------------------------------------- Auxiliares
-
-    /** "2,4-6" -> {2,4,5,6} */
     fun parsearPaginas(texto: String): List<Int> {
         val resultado = linkedSetOf<Int>()
         texto.split(',', ' ', ';').filter { it.isNotBlank() }.forEach { parte ->
@@ -460,7 +495,6 @@ object PdfEngine {
         return resultado.toList()
     }
 
-    /** Quita caracteres que la fuente Helvetica no puede dibujar. */
     fun sanitizar(texto: String): String = texto.map { caracter ->
         when {
             caracter == '\n' || caracter == '\r' -> caracter
@@ -470,6 +504,5 @@ object PdfEngine {
         }
     }.joinToString("")
 
-    /** Convierte puntos a pixeles aproximados (72 dpi base). */
     fun puntosAPixeles(puntos: Float): Int = (puntos * 1.5f).roundToInt()
 }

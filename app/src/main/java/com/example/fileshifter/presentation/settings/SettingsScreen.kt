@@ -57,7 +57,6 @@ import com.example.fileshifter.ui.theme.TextMuted
 import com.example.fileshifter.ui.theme.TextPrimary
 import com.example.fileshifter.ui.theme.TextSecondary
 
-/** Ajustes con las secciones del prototipo (P14). */
 @Composable
 fun SettingsScreen(navController: NavController) {
     val vm: SettingsViewModel = appViewModel {
@@ -76,7 +75,6 @@ fun SettingsScreen(navController: NavController) {
         ) {
             ContenidoResponsive {
                 Column(Modifier.padding(16.dp)) {
-
                     Text("Pipeline de procesamiento", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
                     Text(
                         "Controla qué pasos se sugieren al convertir o escanear.",

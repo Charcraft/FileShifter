@@ -13,11 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/**
- * Estado compartido por los tres pasos de Editar PDF (F3).
- * Vive en el grafo de navegación "edit_flow", así sobrevive a los cambios de paso
- * y a la rotación de pantalla.
- */
 data class EditFlowUiState(
     val archivos: List<ArchivoSeleccionado> = emptyList(),
     val tipo: TipoEdicion? = null,
@@ -27,7 +22,6 @@ data class EditFlowUiState(
 )
 
 class EditFlowViewModel(private val repositorio: DocumentoRepository) : ViewModel() {
-
     private val _estado = MutableStateFlow(EditFlowUiState())
     val estado: StateFlow<EditFlowUiState> = _estado.asStateFlow()
 

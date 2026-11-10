@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Estado de la pantalla Convertir Universal (F1). */
 data class ConvertUiState(
     val archivos: List<ArchivoSeleccionado> = emptyList(),
     val salidasDisponibles: List<FormatoSalida> = emptyList(),
@@ -23,7 +22,6 @@ data class ConvertUiState(
 )
 
 class ConvertViewModel(private val repositorio: DocumentoRepository) : ViewModel() {
-
     private val _estado = MutableStateFlow(ConvertUiState())
     val estado: StateFlow<ConvertUiState> = _estado.asStateFlow()
 

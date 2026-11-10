@@ -9,19 +9,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
-/**
- * Contrato del buscador de bibliografia.
- * La pantalla no sabe si el dato vino de internet o de Room.
- */
 interface ReferenciasRepository {
-
-    /** Referencias guardadas por el alumno (se leen sin conexion). */
     val guardadas: Flow<List<ReferenciaEntity>>
 
-    /** Consulta el catalogo externo. Devuelve error si no hubo respuesta. */
     suspend fun buscar(consulta: String): Result<List<Referencia>>
 
-    /** Respaldo local cuando falla la red. */
     suspend fun buscarGuardadas(consulta: String): List<Referencia>
 
     suspend fun guardar(referencia: Referencia)
@@ -34,14 +26,12 @@ interface ReferenciasRepository {
 class ReferenciasRepositoryImpl(
     private val dao: ReferenciaDao
 ) : ReferenciasRepository {
-
     override val guardadas: Flow<List<ReferenciaEntity>> = dao.observar()
 
     override suspend fun buscar(consulta: String): Result<List<Referencia>> =
         withContext(Dispatchers.IO) {
             var ultimoError: Throwable? = null
 
-            // Dos intentos: el segundo cubre cortes momentaneos de red.
             repeat(2) { intento ->
                 try {
                     val respuesta = ClienteReferencias.api.buscar(
@@ -89,7 +79,6 @@ class ReferenciasRepositoryImpl(
     }
 }
 
-/** Pasa el registro de Room al modelo de dominio. */
 fun ReferenciaEntity.aModelo(): Referencia = Referencia(
     doi = doi,
     titulo = titulo,

@@ -9,12 +9,6 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
 
-/**
- * Cliente del catalogo abierto Crossref (https://api.crossref.org).
- * Es el servicio que usa el buscador de bibliografia del Modo Entrega.
- */
-
-/** Cuerpo de la respuesta de /works. */
 data class CrossrefRespuesta(
     @SerializedName("message") val mensaje: CrossrefMensaje? = null
 )
@@ -43,7 +37,6 @@ data class CrossrefFecha(
 )
 
 interface CrossrefApi {
-
     @GET("works")
     suspend fun buscar(
         @Query("query.bibliographic") consulta: String,
@@ -52,9 +45,7 @@ interface CrossrefApi {
     ): CrossrefRespuesta
 }
 
-/** Instancia unica del cliente, con tiempos de espera cortos para movil. */
 object ClienteReferencias {
-
     const val CAMPOS = "DOI,title,author,issued,container-title,publisher,type"
 
     private const val BASE = "https://api.crossref.org/"
@@ -83,7 +74,6 @@ object ClienteReferencias {
             .create(CrossrefApi::class.java)
     }
 
-    /** Convierte el JSON de Crossref al modelo que usa la app. */
     fun aReferencia(item: CrossrefItem): Referencia? {
         val titulo = item.titulos?.firstOrNull()?.trim().orEmpty()
         if (titulo.isEmpty()) return null

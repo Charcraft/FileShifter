@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Estado de la pantalla Referencias. */
 data class ReferenciasUiState(
     val consulta: String = "",
     val cargando: Boolean = false,
@@ -27,7 +26,6 @@ data class ReferenciasUiState(
 class ReferenciasViewModel(
     private val repositorio: ReferenciasRepository
 ) : ViewModel() {
-
     private val _estado = MutableStateFlow(ReferenciasUiState())
     val estado: StateFlow<ReferenciasUiState> = _estado.asStateFlow()
 
@@ -63,7 +61,6 @@ class ReferenciasViewModel(
                     }
                 },
                 onFailure = {
-                    // Sin conexion: se muestran las que ya estaban guardadas.
                     val locales = repositorio.buscarGuardadas(consulta)
                     _estado.update {
                         it.copy(

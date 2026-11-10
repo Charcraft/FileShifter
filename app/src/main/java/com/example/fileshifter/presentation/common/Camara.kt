@@ -28,10 +28,6 @@ import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
-/**
- * Vista de cámara que entrega el [ImageCapture] listo para tomar fotos.
- * La pantalla decide dónde poner los controles.
- */
 @Composable
 fun CamaraPreview(
     modifier: Modifier = Modifier,
@@ -68,7 +64,6 @@ fun CamaraPreview(
     )
 }
 
-/** Toma una foto y la entrega como archivo temporal. */
 fun tomarFoto(
     captura: ImageCapture,
     ejecutor: Executor,
@@ -86,7 +81,6 @@ fun tomarFoto(
     )
 }
 
-/** Vista de cámara con botón Capturar (para pantallas simples). */
 @Composable
 fun CamaraCaptura(
     modifier: Modifier = Modifier,
@@ -111,7 +105,6 @@ fun CamaraCaptura(
     }
 }
 
-/** Vista de cámara que detecta códigos QR y de barras con ML Kit. */
 @OptIn(ExperimentalGetImage::class)
 @Composable
 fun CamaraCodigos(
@@ -162,6 +155,99 @@ fun CamaraCodigos(
                             preview,
                             analisis
                         )
+                    }
+                }, ContextCompat.getMainExecutor(ctx))
+            }
+        },
+        modifier = modifier
+    )
+}
+
+/**
+ * Cámara del escáner: además del visor y la captura, analiza los fotogramas para
+ * mostrar en vivo el contorno del documento detectado.
+ */
+@OptIn(ExperimentalGetImage::class)
+@Composable
+fun CamaraEscanner(
+    modifier: Modifier = Modifier,
+    onListo: (ImageCapture, androidx.camera.core.Camera) -> Unit,
+    onBordes: (com.example.fileshifter.data.source.Cuadrilatero?) -> Unit
+) {
+    val ciclo = LocalLifecycleOwner.current
+    val ejecutor = remember { Executors.newSingleThreadExecutor() }
+    val principal = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
+    val ultimoAnalisis = remember { longArrayOf(0L) }
+
+    DisposableEffect(Unit) { onDispose { ejecutor.shutdown() } }
+
+    AndroidView(
+        factory = { ctx ->
+            PreviewView(ctx).also { vista ->
+                vista.scaleType = PreviewView.ScaleType.FILL_CENTER
+                val futuro = ProcessCameraProvider.getInstance(ctx)
+                futuro.addListener({
+                    runCatching {
+                        val proveedor = futuro.get()
+                        val preview = Preview.Builder()
+                            .setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_4_3)
+                            .build().apply {
+                                setSurfaceProvider(vista.surfaceProvider)
+                            }
+                        val captura = ImageCapture.Builder()
+                            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                            .build()
+                        val analisis = ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .setTargetResolution(android.util.Size(640, 480))
+                            .build()
+
+                        analisis.setAnalyzer(ejecutor) { proxy ->
+                            var detectado: com.example.fileshifter.data.source.Cuadrilatero? = null
+                            try {
+                                val ahora = System.currentTimeMillis()
+                                if (ahora - ultimoAnalisis[0] < 260) return@setAnalyzer
+                                ultimoAnalisis[0] = ahora
+
+                                val imagen = proxy.image ?: return@setAnalyzer
+                                val plano = imagen.planes.firstOrNull() ?: return@setAnalyzer
+                                val paso = maxOf(2, imagen.width / 300)
+                                val ancho = imagen.width / paso
+                                val alto = imagen.height / paso
+                                if (ancho < 24 || alto < 24) return@setAnalyzer
+
+                                val buffer = plano.buffer
+                                val inicio = buffer.position()
+                                val fila = plano.rowStride
+                                val gris = FloatArray(ancho * alto)
+                                for (y in 0 until alto) {
+                                    val base = inicio + y * paso * fila
+                                    for (x in 0 until ancho) {
+                                        gris[y * ancho + x] =
+                                            (buffer.get(base + x * paso).toInt() and 0xFF).toFloat()
+                                    }
+                                }
+                                detectado = com.example.fileshifter.data.source.DetectorDocumento
+                                    .detectarGris(gris, ancho, alto)
+                                    ?.girar(proxy.imageInfo.rotationDegrees)
+                            } catch (_: Exception) {
+                                detectado = null
+                            } finally {
+                                proxy.close()
+                                val valor = detectado
+                                principal.post { onBordes(valor) }
+                            }
+                        }
+
+                        proveedor.unbindAll()
+                        val camara = proveedor.bindToLifecycle(
+                            ciclo,
+                            CameraSelector.DEFAULT_BACK_CAMERA,
+                            preview,
+                            captura,
+                            analisis
+                        )
+                        onListo(captura, camara)
                     }
                 }, ContextCompat.getMainExecutor(ctx))
             }

@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-/** Estado del Corrector ortográfico (F4). */
 data class CorrectorUiState(
     val texto: String = "",
     val sugerencias: List<Sugerencia> = emptyList(),
@@ -16,7 +15,6 @@ data class CorrectorUiState(
 )
 
 class CorrectorViewModel : ViewModel() {
-
     private val _estado = MutableStateFlow(CorrectorUiState())
     val estado: StateFlow<CorrectorUiState> = _estado.asStateFlow()
 

@@ -12,13 +12,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 
-/**
- * Pruebas del motor PDF real (PDFBox-Android) sobre el dispositivo.
- * Ejecutar con: ./gradlew connectedDebugAndroidTest
- */
 @RunWith(AndroidJUnit4::class)
 class PdfEngineTest {
-
     private lateinit var contexto: Context
     private lateinit var carpeta: File
 
