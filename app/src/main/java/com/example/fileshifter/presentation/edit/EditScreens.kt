@@ -121,7 +121,7 @@ fun EditPickerScreen(navController: NavController) {
                                 modifier = Modifier.weight(1f)
                             )
                             TextButton(onClick = { selector.launch("application/pdf") }) {
-                                Text("+  Añadir PDF", color = Primary)
+                                Text("+ Añadir PDF", color = Primary)
                             }
                         }
                         Spacer(Modifier.height(6.dp))
@@ -191,7 +191,7 @@ fun EditPickerScreen(navController: NavController) {
                 Column(Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
                     BotonPrincipal(
                         texto = if (estado.archivos.isEmpty()) "Siguiente"
-                        else "Siguiente (${estado.archivos.size} PDF)  ›",
+                        else "Siguiente (${estado.archivos.size} PDF) ›",
                         enabled = estado.archivos.isNotEmpty(),
                         onClick = { navController.navigate(Screen.EditType.route) }
                     )
@@ -273,7 +273,7 @@ private fun TarjetaTipo(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "Seleccionar  ›",
+                "Seleccionar ›",
                 style = MaterialTheme.typography.labelLarge,
                 color = Primary
             )

@@ -115,7 +115,7 @@ object CorrectorOrtografico {
                     fin = match.range.last + 1,
                     original = palabra,
                     correccion = palabra.replaceFirstChar { it.uppercase() },
-                    motivo = "Inicio de oracion"
+                    motivo = "Inicio de oración"
                 )
             }
         }

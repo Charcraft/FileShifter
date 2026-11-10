@@ -17,12 +17,12 @@ data class ArchivoSeleccionado(
 
 enum class TipoEdicion(val etiqueta: String, val descripcion: String) {
     UNIR("Unir", "Combina varios PDF en uno solo"),
-    DIVIDIR("Dividir", "Genera un PDF por cada pagina"),
+    DIVIDIR("Dividir", "Genera un PDF por cada página"),
     COMPRIMIR("Comprimir", "Reduce el peso del archivo"),
-    ROTAR("Rotar", "Gira las paginas 90, 180 o 270 grados"),
-    ELIMINAR("Eliminar", "Quita las paginas que indiques"),
-    REORDENAR("Reordenar", "Cambia el orden de las paginas"),
-    MARCA_AGUA("Marca de agua", "Escribe un texto sobre cada pagina")
+    ROTAR("Rotar", "Gira las páginas 90, 180 o 270 grados"),
+    ELIMINAR("Eliminar", "Quita las páginas que indiques"),
+    REORDENAR("Reordenar", "Cambia el orden de las páginas"),
+    MARCA_AGUA("Marca de agua", "Escribe un texto sobre cada página")
 }
 
 data class OpcionesEdicion(
@@ -39,17 +39,31 @@ data class ResultadoConversion(
 )
 
 enum class PlantillaEntrega(val etiqueta: String, val descripcion: String) {
-    ESCOLAR("Escolar", "Portada simple con datos del alumno"),
-    OFICIO("Oficio", "Formato formal con membrete y margenes"),
-    MINIMAL("Minimal", "Solo titulo y datos, sin adornos")
+    ESCOLAR("Escolar", "Membrete institucional centrado"),
+    OFICIO("Oficio", "Banda formal y bloque de datos"),
+    MINIMAL("Minimal", "Título grande, sin adornos")
+}
+
+enum class PosicionLogo(val etiqueta: String) {
+    NINGUNA("Sin logo"),
+    SUPERIOR_IZQUIERDA("Sup. izquierda"),
+    SUPERIOR_DERECHA("Sup. derecha"),
+    FONDO_CENTRO("Fondo central")
 }
 
 data class DatosEntrega(
-    val nombre: String = "",
-    val matricula: String = "",
+    val institucion: String = "",
+    val carrera: String = "",
     val materia: String = "",
     val titulo: String = "",
-    val indice: String = ""
+    val nombre: String = "",
+    val matricula: String = "",
+    val docente: String = "",
+    val fecha: String = "",
+    val textoExtra: String = "",
+    val indice: String = "",
+    val logoUri: String? = null,
+    val posicionLogo: PosicionLogo = PosicionLogo.NINGUNA
 )
 
 data class Chequeo(

@@ -103,7 +103,7 @@ object Archivos {
         else -> "application/octet-stream"
     }
 
-    fun publicarEnDocumentos(context: Context, archivo: File): String? = runCatching {
+    fun publicarEnDocumentos(context: Context, archivo: File): Publicado? = runCatching {
         if (!archivo.exists()) return null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val valores = ContentValues().apply {
@@ -124,7 +124,10 @@ object Archivos {
             valores.clear()
             valores.put(MediaStore.MediaColumns.IS_PENDING, 0)
             resolver.update(uri, valores, null, null)
-            "Documentos/FileShifter/${archivo.name}"
+            Publicado(
+                uri = uri.toString(),
+                rutaVisible = "Documentos/FileShifter/${archivo.name}"
+            )
         } else {
             @Suppress("DEPRECATION")
             val carpeta = File(
@@ -133,7 +136,10 @@ object Archivos {
             ).apply { mkdirs() }
             val destino = File(carpeta, archivo.name)
             archivo.copyTo(destino, overwrite = true)
-            destino.absolutePath
+            Publicado(uri = Uri.fromFile(destino).toString(), rutaVisible = destino.absolutePath)
         }
     }.getOrNull()
+
+    /** Copia publica del archivo: Uri de MediaStore y ruta legible. */
+    data class Publicado(val uri: String, val rutaVisible: String)
 }

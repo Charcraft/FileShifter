@@ -48,7 +48,7 @@ class ReferenciasRepositoryImpl(
                 }
             }
 
-            Result.failure(ultimoError ?: IllegalStateException("Sin respuesta del catalogo"))
+            Result.failure(ultimoError ?: IllegalStateException("Sin respuesta del catálogo"))
         }
 
     override suspend fun buscarGuardadas(consulta: String): List<Referencia> =

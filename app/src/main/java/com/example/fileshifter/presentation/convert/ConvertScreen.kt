@@ -92,7 +92,7 @@ fun ConvertScreen(navController: NavController) {
                                 modifier = Modifier.weight(1f)
                             )
                             TextButton(onClick = { selector.launch("*/*") }) {
-                                Text("+  Añadir archivo", color = Primary)
+                                Text("+ Añadir archivo", color = Primary)
                             }
                         }
 

@@ -54,6 +54,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -72,11 +73,13 @@ import com.example.fileshifter.presentation.common.EtiquetaTipo
 import com.example.fileshifter.presentation.common.MenuTresPuntos
 import com.example.fileshifter.presentation.common.OpcionMenu
 import com.example.fileshifter.presentation.common.PantallaBase
+import com.example.fileshifter.presentation.common.recordarPermisoCamara
 import com.example.fileshifter.presentation.common.Tarjeta
 import com.example.fileshifter.presentation.common.appViewModel
 import com.example.fileshifter.presentation.common.compartirArchivo
 import com.example.fileshifter.presentation.common.formatearFecha
 import com.example.fileshifter.presentation.common.navegarA
+import com.example.fileshifter.presentation.common.recordarPermisoCamara
 import com.example.fileshifter.ui.theme.Border
 import com.example.fileshifter.ui.theme.CameraDark
 import com.example.fileshifter.ui.theme.Primary
@@ -179,6 +182,7 @@ private fun EscanearTab(
     onCodigo: (String) -> Unit
 ) {
     val contexto = androidx.compose.ui.platform.LocalContext.current
+    val permiso = recordarPermisoCamara()
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
     ) {
@@ -191,34 +195,73 @@ private fun EscanearTab(
                         .clip(RoundedCornerShape(20.dp))
                         .background(CameraDark)
                 ) {
-                    CamaraCodigos(Modifier.fillMaxSize(), onCodigo = onCodigo)
-                    Canvas(Modifier.fillMaxSize()) {
-                        val margen = 28.dp.toPx()
-                        val largo = 30.dp.toPx()
-                        val color = Primary
-                        val grosor = 3.dp.toPx()
+                    if (permiso.concedido) {
+                        CamaraCodigos(Modifier.fillMaxSize(), onCodigo = onCodigo)
+                        Canvas(Modifier.fillMaxSize()) {
+                            val margen = 28.dp.toPx()
+                            val largo = 30.dp.toPx()
+                            val color = Primary
+                            val grosor = 3.dp.toPx()
 
-                        drawLine(color, Offset(margen, margen + largo), Offset(margen, margen), grosor)
-                        drawLine(color, Offset(margen, margen), Offset(margen + largo, margen), grosor)
-                        drawLine(color, Offset(size.width - margen - largo, margen), Offset(size.width - margen, margen), grosor)
-                        drawLine(color, Offset(size.width - margen, margen), Offset(size.width - margen, margen + largo), grosor)
+                            drawLine(color, Offset(margen, margen + largo), Offset(margen, margen), grosor)
+                            drawLine(color, Offset(margen, margen), Offset(margen + largo, margen), grosor)
+                            drawLine(color, Offset(size.width - margen - largo, margen), Offset(size.width - margen, margen), grosor)
+                            drawLine(color, Offset(size.width - margen, margen), Offset(size.width - margen, margen + largo), grosor)
 
-                        drawLine(color, Offset(margen, size.height - margen - largo), Offset(margen, size.height - margen), grosor)
-                        drawLine(color, Offset(margen, size.height - margen), Offset(margen + largo, size.height - margen), grosor)
-                        drawLine(color, Offset(size.width - margen - largo, size.height - margen), Offset(size.width - margen, size.height - margen), grosor)
-                        drawLine(color, Offset(size.width - margen, size.height - margen), Offset(size.width - margen, size.height - margen - largo), grosor)
-                    }
-                    Surface(
-                        color = Color.Black.copy(alpha = 0.55f),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(18.dp)
-                    ) {
-                        Text(
-                            "Apunta al código QR o de barras",
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                        )
+                            drawLine(color, Offset(margen, size.height - margen - largo), Offset(margen, size.height - margen), grosor)
+                            drawLine(color, Offset(margen, size.height - margen), Offset(margen + largo, size.height - margen), grosor)
+                            drawLine(color, Offset(size.width - margen - largo, size.height - margen), Offset(size.width - margen, size.height - margen), grosor)
+                            drawLine(color, Offset(size.width - margen, size.height - margen), Offset(size.width - margen, size.height - margen - largo), grosor)
+                        }
+                        Surface(
+                            color = Color.Black.copy(alpha = 0.55f),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.align(Alignment.BottomCenter).padding(18.dp)
+                        ) {
+                            Text(
+                                "Apunta al código QR o de barras",
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
+                    } else {
+                        Column(
+                            Modifier.fillMaxSize().padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                Icons.Filled.QrCode,
+                                contentDescription = null,
+                                tint = Primary,
+                                modifier = Modifier.size(46.dp)
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "Permiso de cámara",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                if (permiso.bloqueado) {
+                                    "La cámara está bloqueada. Actívala en los ajustes del sistema para escanear códigos."
+                                } else {
+                                    "Para leer códigos QR y de barras necesitamos usar la cámara."
+                                },
+                                color = Color.White.copy(alpha = 0.75f),
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            BotonPrincipal(
+                                texto = if (permiso.bloqueado) "Abrir ajustes" else "Permitir cámara",
+                                modifier = Modifier.width(230.dp)
+                            ) {
+                                if (permiso.bloqueado) permiso.abrirAjustes() else permiso.solicitar()
+                            }
+                        }
                     }
                 }
 

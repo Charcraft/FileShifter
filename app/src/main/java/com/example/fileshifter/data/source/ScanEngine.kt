@@ -19,9 +19,24 @@ import kotlin.math.roundToInt
 object ScanEngine {
 
     private const val LADO_VISTA = 1400
-    private const val LADO_DECODIFICADO = 2600
-    private const val LADO_PROCESO = 2000
-    private const val CALIDAD_JPEG = 92
+    private const val CALIDAD_JPEG = 97
+
+    /** Presupuesto de memoria del proceso: define cuánta resolución podemos conservar. */
+    private val memoriaDisponible: Long get() = Runtime.getRuntime().maxMemory()
+
+    private val ladoDecodificado: Int
+        get() = when {
+            memoriaDisponible >= 400L * 1024 * 1024 -> 4032
+            memoriaDisponible >= 256L * 1024 * 1024 -> 3200
+            else -> 2800
+        }
+
+    private val ladoProceso: Int
+        get() = when {
+            memoriaDisponible >= 400L * 1024 * 1024 -> 3200
+            memoriaDisponible >= 256L * 1024 * 1024 -> 2800
+            else -> 2200
+        }
 
     // ------------------------------------------------------------- entradas
 
@@ -31,7 +46,7 @@ object ScanEngine {
 
     /** Foto a resolución completa para generar la página final. */
     fun cargarProceso(archivo: File): Bitmap? =
-        cargarBitmap(archivo, LADO_DECODIFICADO)
+        cargarBitmap(archivo, ladoDecodificado)
 
     fun cargarBitmap(archivo: File, ladoMaximo: Int): Bitmap? {
         if (!archivo.exists()) return null
@@ -160,7 +175,7 @@ object ScanEngine {
 
         var anchoSalida = max(anchoArriba, anchoAbajo).roundToInt().coerceAtLeast(64)
         var altoSalida = max(altoIzquierda, altoDerecha).roundToInt().coerceAtLeast(64)
-        val factor = min(1f, LADO_PROCESO.toFloat() / max(anchoSalida, altoSalida))
+        val factor = min(1f, ladoProceso.toFloat() / max(anchoSalida, altoSalida))
         anchoSalida = max(64, (anchoSalida * factor).roundToInt())
         altoSalida = max(64, (altoSalida * factor).roundToInt())
 
@@ -178,10 +193,10 @@ object ScanEngine {
 
     private fun limitar(origen: Bitmap): Bitmap {
         val mayor = max(origen.width, origen.height)
-        if (mayor <= LADO_PROCESO) {
+        if (mayor <= ladoProceso) {
             return origen.copy(Bitmap.Config.ARGB_8888, false) ?: origen
         }
-        val factor = LADO_PROCESO.toFloat() / mayor
+        val factor = ladoProceso.toFloat() / mayor
         return Bitmap.createScaledBitmap(
             origen,
             max(1, (origen.width * factor).roundToInt()),
@@ -331,7 +346,7 @@ object ScanEngine {
 
         val fondo = fondoLocal(gris, ancho, alto)
         val ganancia = FloatArray(256) { indice ->
-            (245f / max(indice.toFloat(), 6f)).coerceIn(0.55f, 4f)
+            (248f / max(indice.toFloat(), 6f)).coerceIn(0.6f, 3.2f)
         }
         for (i in 0 until total) {
             val indice = fondo[i].toInt().coerceIn(0, 255)
@@ -340,7 +355,10 @@ object ScanEngine {
 
         val (rangoBajo, rangoAlto) = percentiles(gris)
         val estiramiento = FloatArray(256) { valor ->
-            ((valor - rangoBajo) * 255f / max(rangoAlto - rangoBajo, 1f)).coerceIn(0f, 255f)
+            val estirado = ((valor - rangoBajo) * 255f /
+                max(rangoAlto - rangoBajo, 1f)).coerceIn(0f, 255f)
+            // se mezcla con el original para no perder detalle en luces y sombras
+            valor * 0.28f + estirado * 0.72f
         }
         val mapa = IntArray(256) { estiramiento[it].roundToInt().coerceIn(0, 255) }
 
@@ -350,6 +368,7 @@ object ScanEngine {
                     val v = mapa[gris[i].toInt().coerceIn(0, 255)]
                     pixeles[i] = (0xFF shl 24) or (v shl 16) or (v shl 8) or v
                 }
+                realzar(pixeles, ancho, alto, 0.40f)
             }
             FiltroEscaneo.BLANCO_NEGRO -> {
                 val umbralBase = otsu(gris).coerceIn(70f, 205f)
@@ -366,13 +385,14 @@ object ScanEngine {
                     var r = mapa[(((color shr 16) and 0xFF) * g).toInt().coerceIn(0, 255)]
                     var v = mapa[(((color shr 8) and 0xFF) * g).toInt().coerceIn(0, 255)]
                     var b = mapa[((color and 0xFF) * g).toInt().coerceIn(0, 255)]
-                    // ligero refuerzo de color, como el "color mágico" de las apps de escaneo
+                    // refuerzo suave de color, como el "color mágico" de las apps de escaneo
                     val luminancia = 0.299f * r + 0.587f * v + 0.114f * b
-                    r = (luminancia + (r - luminancia) * 1.12f).roundToInt().coerceIn(0, 255)
-                    v = (luminancia + (v - luminancia) * 1.12f).roundToInt().coerceIn(0, 255)
-                    b = (luminancia + (b - luminancia) * 1.12f).roundToInt().coerceIn(0, 255)
+                    r = (luminancia + (r - luminancia) * 1.06f).roundToInt().coerceIn(0, 255)
+                    v = (luminancia + (v - luminancia) * 1.06f).roundToInt().coerceIn(0, 255)
+                    b = (luminancia + (b - luminancia) * 1.06f).roundToInt().coerceIn(0, 255)
                     pixeles[i] = (0xFF shl 24) or (r shl 16) or (v shl 8) or b
                 }
+                realzar(pixeles, ancho, alto, 0.45f)
             }
             FiltroEscaneo.ORIGINAL -> Unit
         }
@@ -380,12 +400,48 @@ object ScanEngine {
         return Bitmap.createBitmap(pixeles, ancho, alto, Bitmap.Config.ARGB_8888)
     }
 
+    /**
+     * Enfoque suave (unsharp mask 3x3): compensa la pérdida de nitidez que deja el
+     * remuestreo de la corrección de perspectiva, sin exagerar los bordes del texto.
+     */
+    private fun realzar(pixeles: IntArray, ancho: Int, alto: Int, cantidad: Float) {
+        if (ancho < 3 || alto < 3 || cantidad <= 0f) return
+        val base = pixeles.copyOf()
+        for (y in 1 until alto - 1) {
+            var i = y * ancho + 1
+            for (x in 1 until ancho - 1) {
+                val centro = base[i]
+                val arriba = base[i - ancho]
+                val abajo = base[i + ancho]
+                val izquierda = base[i - 1]
+                val derecha = base[i + 1]
+
+                val promedioRojo = (((arriba shr 16) and 0xFF) + ((abajo shr 16) and 0xFF) +
+                    ((izquierda shr 16) and 0xFF) + ((derecha shr 16) and 0xFF)) * 0.25f
+                val promedioVerde = (((arriba shr 8) and 0xFF) + ((abajo shr 8) and 0xFF) +
+                    ((izquierda shr 8) and 0xFF) + ((derecha shr 8) and 0xFF)) * 0.25f
+                val promedioAzul = ((arriba and 0xFF) + (abajo and 0xFF) +
+                    (izquierda and 0xFF) + (derecha and 0xFF)) * 0.25f
+
+                val rojo = (centro shr 16) and 0xFF
+                val verde = (centro shr 8) and 0xFF
+                val azul = centro and 0xFF
+
+                val nr = (rojo + cantidad * (rojo - promedioRojo)).toInt().coerceIn(0, 255)
+                val nv = (verde + cantidad * (verde - promedioVerde)).toInt().coerceIn(0, 255)
+                val nb = (azul + cantidad * (azul - promedioAzul)).toInt().coerceIn(0, 255)
+                pixeles[i] = (0xFF shl 24) or (nr shl 16) or (nv shl 8) or nb
+                i++
+            }
+        }
+    }
+
     /** Endereza y filtra en un solo paso, a tamaño reducido (vista previa del editor). */
     fun vistaPrevia(
         origen: Bitmap,
         cuadrilatero: Cuadrilatero,
         filtro: FiltroEscaneo,
-        ladoMaximo: Int = 520
+        ladoMaximo: Int = 1000
     ): Bitmap {
         val enderezado = corregirPerspectivaConLimite(origen, cuadrilatero, ladoMaximo)
         val resultado = aplicarFiltro(enderezado, filtro)
@@ -500,8 +556,8 @@ object ScanEngine {
             histograma[valor.toInt().coerceIn(0, 255)]++
         }
         val total = datos.size
-        val objetivoBajo = (total * 0.02f).toInt()
-        val objetivoAlto = (total * 0.98f).toInt()
+        val objetivoBajo = (total * 0.005f).toInt()
+        val objetivoAlto = (total * 0.995f).toInt()
 
         var acumulado = 0
         var bajo = 0f

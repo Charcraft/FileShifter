@@ -1,4 +1,4 @@
-﻿package com.example.fileshifter.presentation.scanner
+package com.example.fileshifter.presentation.scanner
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -12,6 +12,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -68,6 +69,7 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -89,6 +91,7 @@ import com.example.fileshifter.presentation.common.SistemaBarras
 import com.example.fileshifter.presentation.common.Tarjeta
 import com.example.fileshifter.presentation.common.TarjetaResultado
 import com.example.fileshifter.presentation.common.appViewModel
+import com.example.fileshifter.presentation.common.recordarPermisoCamara
 import com.example.fileshifter.presentation.common.tomarFoto
 import com.example.fileshifter.ui.theme.AmberBg
 import com.example.fileshifter.ui.theme.AmberText
@@ -116,20 +119,9 @@ fun ScannerScreen(navController: NavController) {
     val ejecutor = remember { Executors.newSingleThreadExecutor() }
     DisposableEffect(Unit) { onDispose { ejecutor.shutdown() } }
 
-    var tienePermiso by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(contexto, Manifest.permission.CAMERA) ==
-                PackageManager.PERMISSION_GRANTED
-        )
-    }
-    val pedirPermiso = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        tienePermiso = it
-    }
+    val permiso = recordarPermisoCamara()
     val galeria = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { vm.onGaleria(it.toString()) }
-    }
-    LaunchedEffect(Unit) {
-        if (!tienePermiso) pedirPermiso.launch(Manifest.permission.CAMERA)
     }
 
     Box(Modifier.fillMaxSize().background(CameraDark)) {
@@ -164,8 +156,10 @@ fun ScannerScreen(navController: NavController) {
             else -> PantallaCamara(
                 estado = estado,
                 vm = vm,
-                tienePermiso = tienePermiso,
-                onPedirPermiso = { pedirPermiso.launch(Manifest.permission.CAMERA) },
+                tienePermiso = permiso.concedido,
+                permisoBloqueado = permiso.bloqueado,
+                onPedirPermiso = permiso.solicitar,
+                onAbrirAjustes = permiso.abrirAjustes,
                 onGaleria = { galeria.launch("image/*") },
                 onVolver = { navController.popBackStack() },
                 onCapturar = { capturador ->
@@ -189,7 +183,7 @@ fun ScannerScreen(navController: NavController) {
                     CircularProgressIndicator(color = Primary)
                     Spacer(Modifier.height(14.dp))
                     Text(
-                        "Procesando imagenâ€¦",
+                        "Procesando imagen…",
                         color = Color.White,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -199,14 +193,16 @@ fun ScannerScreen(navController: NavController) {
     }
 }
 
-// --------------------------------------------------------------------- cÃ¡mara
+// --------------------------------------------------------------------- cámara
 
 @Composable
 private fun PantallaCamara(
     estado: ScannerUiState,
     vm: ScannerViewModel,
     tienePermiso: Boolean,
+    permisoBloqueado: Boolean,
     onPedirPermiso: () -> Unit,
+    onAbrirAjustes: () -> Unit,
     onGaleria: () -> Unit,
     onVolver: () -> Unit,
     onCapturar: (ImageCapture) -> Unit
@@ -215,83 +211,108 @@ private fun PantallaCamara(
     var camaraActiva by remember { mutableStateOf<androidx.camera.core.Camera?>(null) }
     var linterna by remember { mutableStateOf(false) }
 
-    Box(Modifier.fillMaxSize()) {
-    if (tienePermiso) {
-        CamaraEscanner(
-            modifier = Modifier.fillMaxSize(),
-            onListo = { captura, camara ->
-                capturador = captura
-                camaraActiva = camara
-            },
-            onBordes = vm::onCuadroVivo
-        )
-    } else {
-        Column(
-            Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        val aspectoCamara = if (maxWidth >= maxHeight) 4f / 3f else 3f / 4f
+
+        // El visor respeta el mismo encuadre que la foto (4:3 del sensor). Así la hoja
+        // ocupa el marco completo en la captura y no se pierde resolución al recortarla.
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .aspectRatio(aspectoCamara, matchHeightConstraintsFirst = false)
         ) {
-            Text("Se necesita permiso de cÃ¡mara", color = Color.White)
-            Spacer(Modifier.height(10.dp))
-            BotonPrincipal(texto = "Dar permiso", modifier = Modifier.width(220.dp)) {
-                onPedirPermiso()
+            if (tienePermiso) {
+                CamaraEscanner(
+                    modifier = Modifier.fillMaxSize(),
+                    onListo = { captura, camara ->
+                        capturador = captura
+                        camaraActiva = camara
+                    },
+                    onBordes = vm::onCuadroVivo
+                )
+
+                // contorno en vivo (mismas coordenadas que el visor)
+                Canvas(Modifier.fillMaxSize()) {
+                    val detectado = estado.cuadroVivo
+                    if (detectado != null) {
+                        fun mapear(punto: Punto) = Offset(
+                            punto.x * size.width,
+                            punto.y * size.height
+                        )
+
+                        val puntos = detectado.puntos.map(::mapear)
+                        val contorno = Path().apply {
+                            moveTo(puntos[0].x, puntos[0].y)
+                            for (i in 1 until puntos.size) lineTo(puntos[i].x, puntos[i].y)
+                            close()
+                        }
+                        val sombra = Path().apply {
+                            fillType = PathFillType.EvenOdd
+                            addRect(Rect(Offset.Zero, size))
+                            moveTo(puntos[0].x, puntos[0].y)
+                            for (i in 1 until puntos.size) lineTo(puntos[i].x, puntos[i].y)
+                            close()
+                        }
+                        drawPath(sombra, Color.Black.copy(alpha = 0.32f), style = Fill)
+                        drawPath(contorno, Primary.copy(alpha = 0.30f), style = Stroke(width = 10.dp.toPx()))
+                        drawPath(contorno, Primary, style = Stroke(width = 3.dp.toPx()))
+                        puntos.forEach { punto ->
+                            drawCircle(Color.White, radius = 7.dp.toPx(), center = punto)
+                            drawCircle(Primary, radius = 4.dp.toPx(), center = punto)
+                        }
+                    } else {
+                        val guia = listOf(
+                            Offset(size.width * 0.14f, size.height * 0.22f),
+                            Offset(size.width * 0.86f, size.height * 0.18f),
+                            Offset(size.width * 0.82f, size.height * 0.70f),
+                            Offset(size.width * 0.18f, size.height * 0.74f)
+                        )
+                        val camino = Path().apply {
+                            moveTo(guia[0].x, guia[0].y)
+                            for (i in 1 until guia.size) lineTo(guia[i].x, guia[i].y)
+                            close()
+                        }
+                        drawPath(camino, Color.White.copy(alpha = 0.55f), style = Stroke(width = 2.dp.toPx()))
+                        guia.forEach { punto ->
+                            drawCircle(Color.White.copy(alpha = 0.55f), radius = 4.dp.toPx(), center = punto)
+                        }
+                    }
+                }
             }
         }
-    }
 
-    // contorno en vivo
-    Canvas(Modifier.fillMaxSize()) {
-        val detectado = estado.cuadroVivo
-        if (detectado != null) {
-            val anchoMarco = if (size.width >= size.height) 4f / 3f else 3f / 4f
-            val escala = max(size.width / anchoMarco, size.height)
-            val anchoDibujo = anchoMarco * escala
-            val altoDibujo = escala
-            val dx = (size.width - anchoDibujo) / 2f
-            val dy = (size.height - altoDibujo) / 2f
-            fun mapear(punto: Punto) = Offset(
-                dx + punto.x * anchoDibujo,
-                dy + punto.y * altoDibujo
-            )
-
-            val puntos = detectado.puntos.map(::mapear)
-            val contorno = Path().apply {
-                moveTo(puntos[0].x, puntos[0].y)
-                for (i in 1 until puntos.size) lineTo(puntos[i].x, puntos[i].y)
-                close()
-            }
-            val sombra = Path().apply {
-                fillType = PathFillType.EvenOdd
-                addRect(Rect(Offset.Zero, size))
-                moveTo(puntos[0].x, puntos[0].y)
-                for (i in 1 until puntos.size) lineTo(puntos[i].x, puntos[i].y)
-                close()
-            }
-            drawPath(sombra, Color.Black.copy(alpha = 0.32f), style = Fill)
-            drawPath(contorno, Primary.copy(alpha = 0.30f), style = Stroke(width = 10.dp.toPx()))
-            drawPath(contorno, Primary, style = Stroke(width = 3.dp.toPx()))
-            puntos.forEach { punto ->
-                drawCircle(Color.White, radius = 7.dp.toPx(), center = punto)
-                drawCircle(Primary, radius = 4.dp.toPx(), center = punto)
-            }
-        } else {
-            val guia = listOf(
-                Offset(size.width * 0.14f, size.height * 0.22f),
-                Offset(size.width * 0.86f, size.height * 0.18f),
-                Offset(size.width * 0.82f, size.height * 0.70f),
-                Offset(size.width * 0.18f, size.height * 0.74f)
-            )
-            val camino = Path().apply {
-                moveTo(guia[0].x, guia[0].y)
-                for (i in 1 until guia.size) lineTo(guia[i].x, guia[i].y)
-                close()
-            }
-            drawPath(camino, Color.White.copy(alpha = 0.55f), style = Stroke(width = 2.dp.toPx()))
-            guia.forEach { punto ->
-                drawCircle(Color.White.copy(alpha = 0.55f), radius = 4.dp.toPx(), center = punto)
+        if (!tienePermiso) {
+            Column(
+                Modifier.fillMaxSize().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("Permiso de cámara", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    if (permisoBloqueado) {
+                        "La cámara está bloqueada. Actívala en los ajustes del sistema para escanear documentos."
+                    } else {
+                        "Para escanear documentos necesitamos usar la cámara. También puedes importar una foto desde la galería."
+                    },
+                    color = Color.White.copy(alpha = 0.75f),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(14.dp))
+                BotonPrincipal(
+                    texto = if (permisoBloqueado) "Abrir ajustes" else "Permitir cámara",
+                    modifier = Modifier.width(230.dp)
+                ) {
+                    if (permisoBloqueado) onAbrirAjustes() else onPedirPermiso()
+                }
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = onGaleria) {
+                    Text("Importar desde galería", color = Color.White)
+                }
             }
         }
-    }
 
     Row(
         modifier = Modifier
@@ -328,7 +349,7 @@ private fun PantallaCamara(
                 )
                 Spacer(Modifier.width(7.dp))
                 Text(
-                    if (estado.cuadroVivo != null) "Documento detectado" else "Buscando bordesâ€¦",
+                    if (estado.cuadroVivo != null) "Documento detectado" else "Buscando bordes…",
                     color = Color.White,
                     style = MaterialTheme.typography.labelMedium
                 )
@@ -403,7 +424,7 @@ private fun PantallaCamara(
                         ) {
                             androidx.compose.foundation.Image(
                                 bitmap = pagina.miniatura.asImageBitmap(),
-                                contentDescription = "PÃ¡gina escaneada",
+                                contentDescription = "Página escaneada",
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
                             )
@@ -422,7 +443,7 @@ private fun PantallaCamara(
 
         if (estado.procesando) {
             Text(
-                "Preparando la pÃ¡ginaâ€¦",
+                "Preparando la página…",
                 color = Color.White,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -442,7 +463,7 @@ private fun PantallaCamara(
                 modifier = Modifier.size(52.dp)
             ) {
                 IconButton(onClick = onGaleria) {
-                    Icon(Icons.Filled.Image, contentDescription = "GalerÃ­a", tint = Color.White)
+                    Icon(Icons.Filled.Image, contentDescription = "Galería", tint = Color.White)
                 }
             }
 
@@ -452,7 +473,7 @@ private fun PantallaCamara(
                     .background(Color.White, CircleShape)
                     .clickable(
                         enabled = !estado.procesando,
-                        onClickLabel = "Capturar pÃ¡gina",
+                        onClickLabel = "Capturar página",
                         role = androidx.compose.ui.semantics.Role.Button
                     ) {
                         capturador?.let(onCapturar)
@@ -470,7 +491,7 @@ private fun PantallaCamara(
                 IconButton(onClick = { vm.abrirRevisor() }) {
                     Icon(
                         if (estado.paginas.isEmpty()) Icons.Filled.Description else Icons.Filled.Check,
-                        contentDescription = "Revisar pÃ¡ginas",
+                        contentDescription = "Revisar páginas",
                         tint = Color.White
                     )
                 }
@@ -480,7 +501,7 @@ private fun PantallaCamara(
         if (estado.paginas.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             BotonPrincipal(
-                texto = "Crear PDF (${estado.paginas.size} pÃ¡gina${if (estado.paginas.size == 1) "" else "s"})",
+                texto = "Crear PDF (${estado.paginas.size} página${if (estado.paginas.size == 1) "" else "s"})",
                 enabled = !estado.generando
             ) {
                 vm.abrirRevisor()
@@ -529,12 +550,12 @@ private fun EditorEscaneo(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    if (edicion.paginaId == 0L) "Ajustar documento" else "Editar pÃ¡gina",
+                    if (edicion.paginaId == 0L) "Ajustar documento" else "Editar página",
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    if (verBordes) "Arrastra las esquinas" else "AsÃ­ se verÃ¡ tu escaneo",
+                    if (verBordes) "Arrastra las esquinas" else "Así se verá tu escaneo",
                     color = TextMuted,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -726,7 +747,7 @@ private fun EditorEscaneo(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Aplicando filtroâ€¦",
+                            "Aplicando filtro…",
                             color = Color.White,
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -822,14 +843,14 @@ private fun EditorEscaneo(
 
             Spacer(Modifier.height(10.dp))
             BotonPrincipal(
-                texto = if (edicion.paginaId == 0L) "Aplicar y aÃ±adir pÃ¡gina" else "Guardar cambios",
+                texto = if (edicion.paginaId == 0L) "Aplicar y añadir página" else "Guardar cambios",
                 enabled = !procesando
             ) {
                 onAplicar()
             }
             Spacer(Modifier.height(6.dp))
             Text(
-                "Consejo: deja un pequeÃ±o margen alrededor de la hoja para que el recorte quede completo.",
+                "Consejo: deja un pequeño margen alrededor de la hoja para que el recorte quede completo.",
                 color = TextMuted,
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 2,
@@ -903,12 +924,12 @@ private fun RevisarEscaneo(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(
-                                "${estado.paginas.size} pÃ¡gina${if (estado.paginas.size == 1) "" else "s"} escaneada${if (estado.paginas.size == 1) "" else "s"}",
+                                "${estado.paginas.size} página${if (estado.paginas.size == 1) "" else "s"} escaneada${if (estado.paginas.size == 1) "" else "s"}",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = TextPrimary
                             )
                             Text(
-                                "Toca una pÃ¡gina para ajustar sus bordes o el filtro.",
+                                "Toca una página para ajustar sus bordes o el filtro.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextSecondary
                             )
@@ -927,7 +948,7 @@ private fun RevisarEscaneo(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         androidx.compose.foundation.Image(
                             bitmap = pagina.miniatura.asImageBitmap(),
-                            contentDescription = "PÃ¡gina",
+                            contentDescription = "Página",
                             modifier = Modifier
                                 .height(74.dp)
                                 .clip(RoundedCornerShape(8.dp))
@@ -941,12 +962,12 @@ private fun RevisarEscaneo(
                                 .clickable { onAbrir(pagina.id) }
                         ) {
                             Text(
-                                "PÃ¡gina ${estado.paginas.indexOf(pagina) + 1}",
+                                "Página ${estado.paginas.indexOf(pagina) + 1}",
                                 style = MaterialTheme.typography.titleSmall,
                                 color = TextPrimary
                             )
                             Text(
-                                "${pagina.filtro.etiqueta} Â· ${pagina.ancho}Ã—${pagina.alto}px",
+                                "${pagina.filtro.etiqueta} · ${pagina.ancho}×${pagina.alto}px",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextSecondary
                             )
@@ -959,7 +980,7 @@ private fun RevisarEscaneo(
                         IconButton(onClick = { onEliminar(pagina.id) }) {
                             Icon(
                                 Icons.Filled.Delete,
-                                contentDescription = "Eliminar pÃ¡gina",
+                                contentDescription = "Eliminar página",
                                 tint = TextMuted
                             )
                         }
@@ -1022,7 +1043,7 @@ private fun RevisarEscaneo(
                 item {
                     Tarjeta {
                         Text(
-                            "TodavÃ­a no hay pÃ¡ginas. Vuelve a la cÃ¡mara y captura tu documento.",
+                            "Todavía no hay páginas. Vuelve a la cámara y captura tu documento.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary
                         )
@@ -1040,24 +1061,24 @@ private fun RevisarEscaneo(
             ) {
                 if (estado.paginas.isNotEmpty()) {
                     BotonPrincipal(
-                        texto = if (estado.generando) "Creando PDFâ€¦" else "Crear PDF",
+                        texto = if (estado.generando) "Creando PDF…" else "Crear PDF",
                         enabled = !estado.generando && !estado.extrayendoTexto
                     ) { onPdf() }
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         BotonSecundario(
-                            texto = if (estado.extrayendoTexto) "Leyendoâ€¦" else "Extraer texto",
+                            texto = if (estado.extrayendoTexto) "Leyendo…" else "Extraer texto",
                             modifier = Modifier.weight(1f),
                             onClick = onTexto
                         )
                         BotonSecundario(
-                            texto = "AÃ±adir pÃ¡gina",
+                            texto = "Añadir página",
                             modifier = Modifier.weight(1f),
                             onClick = onAnadir
                         )
                     }
                 } else {
-                    BotonPrincipal(texto = "Volver a la cÃ¡mara") { onAnadir() }
+                    BotonPrincipal(texto = "Volver a la cámara") { onAnadir() }
                 }
             }
         }
@@ -1066,9 +1087,9 @@ private fun RevisarEscaneo(
     if (confirmarVaciar) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { confirmarVaciar = false },
-            title = { Text("Â¿Vaciar el escaneo?") },
+            title = { Text("¿Vaciar el escaneo?") },
             text = {
-                Text("Se eliminarÃ¡n las pÃ¡ginas capturadas. Los PDF que ya hayas creado no se tocan.")
+                Text("Se eliminarán las páginas capturadas. Los PDF que ya hayas creado no se tocan.")
             },
             confirmButton = {
                 TextButton(onClick = {

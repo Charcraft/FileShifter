@@ -83,7 +83,7 @@ fun CorrectorScreen(navController: NavController) {
                         text = buildAnnotatedString {
                             withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(mensaje) }
                             if (estado.sugerencias.isNotEmpty()) {
-                                append("  ·  Toca una palabra subrayada para corregir")
+                                append(" · Toca una palabra subrayada para corregir")
                             }
                         },
                         color = AmberText,
@@ -121,7 +121,7 @@ fun CorrectorScreen(navController: NavController) {
                             Spacer(Modifier.height(12.dp))
                             Tarjeta {
                                 Text(
-                                    "PÁRRAFO 1 DE ${estado.texto.split("\n\n").size.coerceAtLeast(1)}",
+                                    "VISTA PREVIA DEL TEXTO",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = TextMuted
                                 )

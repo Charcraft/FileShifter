@@ -22,7 +22,12 @@ data class HistorialEntity(
     val operacion: String,
     val tamanoBytes: Long,
     val tipoMime: String,
-    val creadoEn: Long
+    val creadoEn: Long,
+    /**
+     * Copia publica en Documentos/FileShifter (content:// de MediaStore).
+     * Es la que sobrevive a la desinstalacion de la app y la que abre el visor.
+     */
+    val publica: String? = null
 )
 
 @Dao
@@ -75,7 +80,7 @@ interface ReferenciaDao {
     suspend fun limpiar()
 }
 
-@Database(entities = [HistorialEntity::class, ReferenciaEntity::class], version = 2, exportSchema = false)
+@Database(entities = [HistorialEntity::class, ReferenciaEntity::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun historialDao(): HistorialDao
 
@@ -98,6 +103,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** La version 3 guarda la copia publica del archivo (Documentos/FileShifter). */
+        private val MIGRACION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `historial` ADD COLUMN `publica` TEXT")
+            }
+        }
+
         @Volatile
         private var instancia: AppDatabase? = null
 
@@ -107,7 +119,7 @@ abstract class AppDatabase : RoomDatabase() {
                 AppDatabase::class.java,
                 "fileshifter.db"
             )
-                .addMigrations(MIGRACION_1_2)
+                .addMigrations(MIGRACION_1_2, MIGRACION_2_3)
                 .build()
                 .also { instancia = it }
         }

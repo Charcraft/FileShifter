@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Spellcheck
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
@@ -50,6 +51,7 @@ import com.example.fileshifter.presentation.common.ContenidoResponsive
 import com.example.fileshifter.presentation.common.PantallaBase
 import com.example.fileshifter.presentation.common.Tarjeta
 import com.example.fileshifter.presentation.common.appViewModel
+import com.example.fileshifter.presentation.common.recordarPermisoCamara
 import com.example.fileshifter.ui.theme.Border
 import com.example.fileshifter.ui.theme.Primary
 import com.example.fileshifter.ui.theme.PrimaryLight
@@ -64,6 +66,7 @@ fun SettingsScreen(navController: NavController) {
     }
     val ajustes by vm.ajustes.collectAsStateWithLifecycle()
     val almacenamiento by vm.almacenamiento.collectAsStateWithLifecycle()
+    val permisoCamara = recordarPermisoCamara()
     var confirmar by remember { mutableStateOf(false) }
 
     val limite = 200L * 1024L * 1024L
@@ -127,6 +130,56 @@ fun SettingsScreen(navController: NavController) {
                             onCambia = vm::setNoPreguntarMas,
                             inactivo = !ajustes.noPreguntarMas
                         )
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+                    Text("Permisos", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+                    Text(
+                        "La cámara se usa en el escáner y en el lector de códigos.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                    Spacer(Modifier.height(10.dp))
+
+                    Tarjeta(padding = 0.dp) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            ChipIcono(Icons.Filled.PhotoCamera, tamano = 40.dp)
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    "Cámara",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = TextPrimary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    when {
+                                        permisoCamara.concedido -> "Concedido"
+                                        permisoCamara.bloqueado -> "Bloqueado: actívalo en los ajustes del sistema"
+                                        else -> "No concedido"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (permisoCamara.concedido) Primary else TextMuted
+                                )
+                            }
+                            TextButton(onClick = {
+                                when {
+                                    permisoCamara.concedido || permisoCamara.bloqueado ->
+                                        permisoCamara.abrirAjustes()
+                                    else -> permisoCamara.solicitar()
+                                }
+                            }) {
+                                Text(
+                                    if (permisoCamara.concedido) "Ajustes"
+                                    else if (permisoCamara.bloqueado) "Abrir ajustes"
+                                    else "Permitir",
+                                    color = Primary
+                                )
+                            }
+                        }
                     }
 
                     Spacer(Modifier.height(24.dp))

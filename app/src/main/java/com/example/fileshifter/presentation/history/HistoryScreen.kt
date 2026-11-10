@@ -1,6 +1,10 @@
 package com.example.fileshifter.presentation.history
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -26,11 +31,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.fileshifter.data.local.HistorialEntity
 import com.example.fileshifter.data.model.formatearTamano
+import com.example.fileshifter.data.source.CacheVisor
 import com.example.fileshifter.navigation.Screen
 import com.example.fileshifter.presentation.common.BarraInferior
 import com.example.fileshifter.presentation.common.ChipIcono
@@ -51,12 +61,15 @@ import com.example.fileshifter.presentation.common.appViewModel
 import com.example.fileshifter.presentation.common.compartirArchivo
 import com.example.fileshifter.presentation.common.formatearFecha
 import com.example.fileshifter.presentation.common.iconoDeArchivo
+import com.example.fileshifter.presentation.visor.VisorActivity
 import com.example.fileshifter.ui.theme.Border
 import com.example.fileshifter.ui.theme.Primary
 import com.example.fileshifter.ui.theme.PrimaryLight
 import com.example.fileshifter.ui.theme.TextMuted
 import com.example.fileshifter.ui.theme.TextPrimary
 import com.example.fileshifter.ui.theme.TextSecondary
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 private val FILTROS = listOf("Todos", "PDF", "IMG", "QR", "DOC", "XLS")
@@ -192,6 +205,7 @@ private fun FilaHistorial(
     onCompartir: () -> Unit,
     onEliminar: () -> Unit
 ) {
+    val contexto = LocalContext.current
     val etiqueta = when {
         item.nombre.endsWith(".pdf", true) -> "PDF"
         item.nombre.matches(Regex(".*\\.(png|jpe?g|webp|heic|bmp)$", RegexOption.IGNORE_CASE)) -> "IMG"
@@ -199,11 +213,18 @@ private fun FilaHistorial(
         item.nombre.matches(Regex(".*\\.(xlsx?|csv)$", RegexOption.IGNORE_CASE)) -> "XLS"
         else -> "DOC"
     }
+
+    // Se prefiere la copia publica: sigue existiendo aunque la app se reinstale.
+    val destino = item.publica ?: item.ruta
+
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { VisorActivity.abrir(contexto, destino, item.nombre) }
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ChipIcono(iconoDeArchivo(item.nombre), tamano = 44.dp)
+        MiniaturaHistorial(item)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
@@ -225,8 +246,41 @@ private fun FilaHistorial(
             }
         }
         MenuTresPuntos {
+            OpcionMenu("Ver documento") { VisorActivity.abrir(contexto, destino, item.nombre) }
             OpcionMenu("Compartir") { onCompartir() }
             OpcionMenu("Quitar del historial") { onEliminar() }
         }
+    }
+}
+
+/**
+ * Miniatura del archivo usando el cache del visor. Si todavia se esta generando
+ * o el tipo no se puede dibujar, se queda el icono de siempre.
+ */
+@Composable
+private fun MiniaturaHistorial(item: HistorialEntity) {
+    val contexto = LocalContext.current
+    val mapa by produceState<Bitmap?>(initialValue = null, item.id, item.creadoEn) {
+        value = withContext(Dispatchers.IO) {
+            val archivo = File(item.ruta)
+            if (!archivo.exists()) return@withContext null
+            val miniatura = CacheVisor.miniatura(contexto, archivo)
+            miniatura?.let { BitmapFactory.decodeFile(it.absolutePath) }
+        }
+    }
+
+    val imagen = mapa
+    if (imagen == null) {
+        ChipIcono(iconoDeArchivo(item.nombre), tamano = 44.dp)
+    } else {
+        Image(
+            bitmap = imagen.asImageBitmap(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(PrimaryLight)
+        )
     }
 }

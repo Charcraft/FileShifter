@@ -1,4 +1,4 @@
-﻿package com.example.fileshifter.data.source
+package com.example.fileshifter.data.source
 
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -13,22 +13,22 @@ import kotlin.math.sin
  * Detector de la hoja de papel dentro de una foto.
  *
  * Estrategia en dos pasadas:
- *  1. Transformada de Hough guiada por la orientaciÃ³n del gradiente (Sobel). Busca las
- *     rectas de los cuatro bordes, cruza las candidatas y elige el cuadrilÃ¡tero que
+ *  1. Transformada de Hough guiada por la orientación del gradiente (Sobel). Busca las
+ *     rectas de los cuatro bordes, cruza las candidatas y elige el cuadrilátero que
  *     mejor se apoya sobre bordes reales de la imagen.
- *  2. Si no hay una propuesta vÃ¡lida, segmenta la zona mÃ¡s brillante (u oscura) de la
+ *  2. Si no hay una propuesta válida, segmenta la zona más brillante (u oscura) de la
  *     imagen y toma sus puntos extremos como esquinas.
  *
- * Todos los puntos que devuelve estÃ¡n normalizados (0..1) respecto a la imagen.
+ * Todos los puntos que devuelve están normalizados (0..1) respecto a la imagen.
  */
 object DetectorDocumento {
 
     private const val LADO_ANALISIS = 720
-    private const val BUCKETS_ANGULO = 180          // resoluciÃ³n de 1 grado
+    private const val BUCKETS_ANGULO = 180          // resolución de 1 grado
     private const val CANDIDATAS_POR_LADO = 5
     private const val MUESTRAS_LADO = 48
 
-    /** Detecta las esquinas de la hoja a partir de los pÃ­xeles ARGB. */
+    /** Detecta las esquinas de la hoja a partir de los píxeles ARGB. */
     fun detectar(ancho: Int, alto: Int, pixeles: IntArray): Cuadrilatero? {
         if (ancho < 16 || alto < 16) return null
 
@@ -52,7 +52,7 @@ object DetectorDocumento {
         return detectarGris(gris, w, h)
     }
 
-    /** NÃºcleo del detector. Devuelve esquinas normalizadas o null si no hay documento. */
+    /** Núcleo del detector. Devuelve esquinas normalizadas o null si no hay documento. */
     fun detectarGris(entrada: FloatArray, ancho: Int, alto: Int): Cuadrilatero? {
         if (entrada.size < ancho * alto || ancho < 16 || alto < 16) return null
         val suave = desenfoque(entrada, ancho, alto)
@@ -137,7 +137,7 @@ object DetectorDocumento {
         if (puntosBorde < 150) return null
 
         // Perfil suavizado: una recta inclinada reparte sus votos entre varias celdas
-        // de rho, asÃ­ que se suman ventanas de 7 celdas antes de buscar picos.
+        // de rho, así que se suman ventanas de 7 celdas antes de buscar picos.
         var maxSuave = 0
         for (b in 0 until BUCKETS_ANGULO) {
             val fila = acumulador[b]
@@ -278,7 +278,7 @@ object DetectorDocumento {
 
 
 
-    /** FracciÃ³n media del borde del cuadrilÃ¡tero que cae sobre un gradiente fuerte. */
+    /** Fracción media del borde del cuadrilátero que cae sobre un gradiente fuerte. */
     private fun soporteCuadrilatero(
         a: Punto,
         b: Punto,
@@ -368,7 +368,7 @@ object DetectorDocumento {
         }
     }
 
-    // ------------------------------------------------------------- Por mÃ¡scara
+    // ------------------------------------------------------------- Por máscara
 
     private fun porMascara(gris: FloatArray, ancho: Int, alto: Int): Cuadrilatero? {
         val borde = ArrayList<Float>(2 * (ancho + alto))

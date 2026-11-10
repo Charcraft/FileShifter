@@ -69,9 +69,9 @@ class ReferenciasViewModel(
                             desdeCache = locales.isNotEmpty(),
                             sinResultados = locales.isEmpty(),
                             error = if (locales.isEmpty())
-                                "No se pudo conectar con el catalogo. Revisa tu conexion e intentalo de nuevo."
+                                "No se pudo conectar con el catálogo. Revisa tu conexión e inténtalo de nuevo."
                             else
-                                "Sin conexion. Se muestran las referencias guardadas que coinciden."
+                                "Sin conexión. Se muestran las referencias guardadas que coinciden."
                         )
                     }
                 }

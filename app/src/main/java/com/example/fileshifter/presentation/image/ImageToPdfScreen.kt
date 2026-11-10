@@ -132,7 +132,7 @@ fun ImageToPdfScreen(navController: NavController) {
                                 )
                             }
                             TextButton(onClick = { selector.launch("image/*") }) {
-                                Text("+  Añadir imágenes", color = Primary)
+                                Text("+ Añadir imágenes", color = Primary)
                             }
                         }
 

@@ -4,8 +4,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import com.example.fileshifter.data.model.DatosEntrega
 import com.example.fileshifter.data.model.InfoPdf
 import com.example.fileshifter.data.model.OpcionesEdicion
+import com.example.fileshifter.data.model.PlantillaEntrega
 import com.example.fileshifter.data.model.TipoEdicion
 import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
@@ -16,6 +18,7 @@ import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
+import com.tom_roush.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import com.tom_roush.pdfbox.util.Matrix
 import java.io.File
@@ -89,7 +92,7 @@ object PdfEngine {
                         PDPage(PDRectangle.A4)
                     }
                     doc.addPage(pagina)
-                    val imagen = JPEGFactory.createFromImage(doc, plano, 0.9f)
+                    val imagen = JPEGFactory.createFromImage(doc, plano, 0.95f)
                     val anchoPagina = pagina.mediaBox.width
                     val altoPagina = pagina.mediaBox.height
                     val escala = minOf(
@@ -126,7 +129,7 @@ object PdfEngine {
         if (limites.outWidth <= 0 || limites.outHeight <= 0) return null
         var muestra = 1
         val mayor = maxOf(limites.outWidth, limites.outHeight)
-        while (mayor / (muestra * 2) > 2800) muestra *= 2
+        while (mayor / (muestra * 2) > 3400) muestra *= 2
         val opciones = BitmapFactory.Options().apply {
             inSampleSize = muestra
             inPreferredConfig = Bitmap.Config.ARGB_8888
@@ -397,88 +400,129 @@ object PdfEngine {
             ?: error("No se pudo abrir el PDF")
 
     fun portadaEntrega(
+        context: Context,
         nombrePlantilla: String,
-        nombre: String,
-        matricula: String,
-        materia: String,
-        titulo: String,
-        indice: String,
+        datos: DatosEntrega,
         salida: File
     ) {
+        val plantilla = runCatching { PlantillaEntrega.valueOf(nombrePlantilla) }
+            .getOrDefault(PlantillaEntrega.ESCOLAR)
+        val aspecto = aspectoLogo(context, datos.logoUri)
+        val layout = PortadaLayoutBuilder.componer(plantilla, datos, aspecto)
+
         val doc = PDDocument()
         try {
             val pagina = PDPage(PDRectangle.A4)
             doc.addPage(pagina)
-            val ancho = pagina.mediaBox.width
-            val alto = pagina.mediaBox.height
 
             PDPageContentStream(doc, pagina).use { contenido ->
-
-                if (nombrePlantilla != "MINIMAL") {
-                    contenido.setNonStrokingColor(0.05f, 0.65f, 0.91f)
-                    contenido.addRect(0f, alto - 18f, ancho, 18f)
+                layout.fondos.forEach { rect ->
+                    contenido.setNonStrokingColor(rect.color.r, rect.color.g, rect.color.b)
+                    contenido.addRect(rect.x, rect.y, rect.ancho, rect.alto)
                     contenido.fill()
                 }
-
-                var y = alto - 120f
-                contenido.beginText()
-                contenido.setNonStrokingColor(0.06f, 0.09f, 0.16f)
-                contenido.setFont(PDType1Font.HELVETICA_BOLD, 26f)
-                contenido.newLineAtOffset(MARGEN, y)
-                contenido.showText(sanitizar(materia.ifBlank { "Trabajo" }))
-                contenido.endText()
-
-                y -= 70f
-                contenido.beginText()
-                contenido.setFont(PDType1Font.HELVETICA_BOLD, 18f)
-                contenido.newLineAtOffset(MARGEN, y)
-                ajustar(sanitizar(titulo.ifBlank { "Sin titulo" }), 46f).forEach { linea ->
-                    contenido.showText(linea)
-                    contenido.newLine()
-                }
-                contenido.endText()
-
-                y -= 90f
-                contenido.beginText()
-                contenido.setFont(PDType1Font.HELVETICA, 13f)
-                contenido.newLineAtOffset(MARGEN, y)
-                listOf(
-                    "Alumno: ${nombre.ifBlank { "-" }}",
-                    "Matricula: ${matricula.ifBlank { "-" }}",
-                    "Materia: ${materia.ifBlank { "-" }}"
-                ).forEach { linea ->
-                    contenido.showText(sanitizar(linea))
-                    contenido.newLine()
-                }
-                contenido.endText()
-
-                if (indice.isNotBlank()) {
-                    y -= 70f
-                    contenido.beginText()
-                    contenido.setFont(PDType1Font.HELVETICA_BOLD, 14f)
-                    contenido.newLineAtOffset(MARGEN, y)
-                    contenido.showText("Indice")
-                    contenido.newLine()
-                    contenido.setFont(PDType1Font.HELVETICA, 11f)
-                    contenido.newLine()
-                    sanitizar(indice).split("\n").take(25).forEach { linea ->
-                        contenido.showText(linea.take(80))
-                        contenido.newLine()
-                    }
-                    contenido.endText()
-                }
-
-                contenido.beginText()
-                contenido.setFont(PDType1Font.HELVETICA, 9f)
-                contenido.setNonStrokingColor(0.45f, 0.52f, 0.6f)
-                contenido.newLineAtOffset(MARGEN, 40f)
-                contenido.showText("Generado con FileShifter - sin conexion")
-                contenido.endText()
             }
+
+            layout.logo?.let { logo -> dibujarLogo(context, doc, pagina, logo) }
+
+            PDPageContentStream(
+                doc,
+                pagina,
+                PDPageContentStream.AppendMode.APPEND,
+                true,
+                true
+            ).use { contenido ->
+                layout.textos.forEach { texto -> dibujarTexto(contenido, layout.ancho, texto) }
+            }
+
+            doc.documentInformation.title = datos.titulo.ifBlank { "Portada" }
+            if (datos.nombre.isNotBlank()) doc.documentInformation.author = datos.nombre
             doc.save(salida)
         } finally {
             doc.close()
         }
+    }
+
+    private fun dibujarTexto(
+        contenido: PDPageContentStream,
+        anchoPagina: Float,
+        texto: TextoPortada
+    ) {
+        val fuente = if (texto.negrita) PDType1Font.HELVETICA_BOLD else PDType1Font.HELVETICA
+        val x = if (texto.centrado) (anchoPagina - texto.anchoTexto) / 2f else texto.x
+        contenido.beginText()
+        contenido.setFont(fuente, texto.tamano)
+        contenido.setNonStrokingColor(texto.color.r, texto.color.g, texto.color.b)
+        if (texto.espaciado != 0f) contenido.setCharacterSpacing(texto.espaciado)
+        contenido.newLineAtOffset(x, texto.yArriba - texto.tamano * 0.78f)
+        contenido.showText(texto.texto)
+        contenido.endText()
+        if (texto.espaciado != 0f) contenido.setCharacterSpacing(0f)
+    }
+
+    private fun dibujarLogo(
+        context: Context,
+        doc: PDDocument,
+        pagina: PDPage,
+        logo: LogoPortada
+    ) {
+        val bitmap = cargarLogoBitmap(context, logo.uri) ?: return
+        try {
+            val imagen = LosslessFactory.createFromImage(doc, bitmap)
+            PDPageContentStream(
+                doc,
+                pagina,
+                PDPageContentStream.AppendMode.APPEND,
+                true,
+                true
+            ).use { contenido ->
+                if (logo.opacidad < 1f) {
+                    val estado = PDExtendedGraphicsState()
+                    estado.setNonStrokingAlphaConstant(logo.opacidad)
+                    estado.setStrokingAlphaConstant(logo.opacidad)
+                    contenido.setGraphicsStateParameters(estado)
+                }
+                contenido.drawImage(imagen, logo.x, logo.y, logo.ancho, logo.alto)
+            }
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    /** Proporción (ancho / alto) del logo, sin cargar la imagen completa. */
+    fun aspectoLogo(context: Context, uri: String?): Float? {
+        if (uri.isNullOrBlank()) return null
+        val parsed = runCatching { Uri.parse(uri) }.getOrNull() ?: return null
+        val limites = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        runCatching {
+            context.contentResolver.openInputStream(parsed)
+                ?.use { BitmapFactory.decodeStream(it, null, limites) }
+        }
+        if (limites.outWidth <= 0 || limites.outHeight <= 0) return null
+        return limites.outWidth.toFloat() / limites.outHeight.toFloat()
+    }
+
+    /** Carga el logo reducido a un tamaño razonable para PDF y vista previa. */
+    fun cargarLogoBitmap(context: Context, uri: String): Bitmap? {
+        val parsed = runCatching { Uri.parse(uri) }.getOrNull() ?: return null
+        val limites = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        runCatching {
+            context.contentResolver.openInputStream(parsed)
+                ?.use { BitmapFactory.decodeStream(it, null, limites) }
+        }
+        if (limites.outWidth <= 0 || limites.outHeight <= 0) return null
+
+        var muestra = 1
+        val mayor = maxOf(limites.outWidth, limites.outHeight)
+        while (mayor / (muestra * 2) >= 1000) muestra *= 2
+        val opciones = BitmapFactory.Options().apply {
+            inSampleSize = muestra
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        return runCatching {
+            context.contentResolver.openInputStream(parsed)
+                ?.use { BitmapFactory.decodeStream(it, null, opciones) }
+        }.getOrNull()
     }
 
     fun parsearPaginas(texto: String): List<Int> {

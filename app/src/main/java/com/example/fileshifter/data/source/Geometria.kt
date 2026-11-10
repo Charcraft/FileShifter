@@ -1,11 +1,11 @@
-﻿package com.example.fileshifter.data.source
+package com.example.fileshifter.data.source
 
-/** Punto en coordenadas de imagen (pÃ­xeles o normalizado 0..1). */
+/** Punto en coordenadas de imagen (píxeles o normalizado 0..1). */
 data class Punto(val x: Float, val y: Float)
 
 /**
  * Las cuatro esquinas de una hoja, en orden: superior izquierda, superior derecha,
- * inferior derecha e inferior izquierda. Las coordenadas estÃ¡n normalizadas (0..1)
+ * inferior derecha e inferior izquierda. Las coordenadas están normalizadas (0..1)
  * respecto al ancho y alto de la imagen.
  */
 data class Cuadrilatero(
@@ -30,7 +30,7 @@ data class Cuadrilatero(
         Punto(infIzq.x * ancho, infIzq.y * alto)
     )
 
-    /** Gira el marco 90Â° en sentido horario (el mismo giro que sufre la foto). */
+    /** Gira el marco 90° en sentido horario (el mismo giro que sufre la foto). */
     fun girar90(): Cuadrilatero {
         val p = puntos.map { Punto(1f - it.y, it.x) }
         return Cuadrilatero(p[3], p[0], p[1], p[2])

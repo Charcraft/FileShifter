@@ -196,6 +196,8 @@ fun CamaraEscanner(
                             }
                         val captura = ImageCapture.Builder()
                             .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                            .setJpegQuality(100)
+                            .setTargetAspectRatio(androidx.camera.core.AspectRatio.RATIO_4_3)
                             .build()
                         val analisis = ImageAnalysis.Builder()
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)

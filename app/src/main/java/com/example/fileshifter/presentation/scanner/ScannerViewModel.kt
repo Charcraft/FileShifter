@@ -243,7 +243,7 @@ class ScannerViewModel(
             }
             val previa = withContext(Dispatchers.Default) {
                 runCatching {
-                    ScanEngine.vistaPrevia(base.vista, base.cuadrilatero, base.filtro, 520)
+                    ScanEngine.vistaPrevia(base.vista, base.cuadrilatero, base.filtro, 1000)
                 }.getOrNull()
             }
             _estado.update { estado ->

@@ -35,7 +35,8 @@ class HistorialRepository(private val dao: HistorialDao) {
         ruta: String,
         operacion: String,
         tamanoBytes: Long,
-        tipoMime: String
+        tipoMime: String,
+        publica: String? = null
     ) = withContext(Dispatchers.IO) {
         dao.insertar(
             HistorialEntity(
@@ -44,7 +45,8 @@ class HistorialRepository(private val dao: HistorialDao) {
                 operacion = operacion,
                 tamanoBytes = tamanoBytes,
                 tipoMime = tipoMime,
-                creadoEn = System.currentTimeMillis()
+                creadoEn = System.currentTimeMillis(),
+                publica = publica
             )
         )
     }
@@ -151,7 +153,7 @@ class DocumentoRepositoryImpl(
             }
             val publicado = registrarTodo(generados, "Convertir")
             if (generados.isEmpty()) {
-                ResultadoConversion(false, "No se genero ningun archivo. Revisa el formato de origen.")
+                ResultadoConversion(false, "No se generó ningún archivo. Revisa el formato de origen.")
             } else {
                 val extra = if (publicado) " También quedó en Documentos/FileShifter." else ""
                 ResultadoConversion(
@@ -175,7 +177,7 @@ class DocumentoRepositoryImpl(
             if (tipo == TipoEdicion.UNIR) {
                 require(uris.size >= 2) { "Para unir se necesitan al menos dos PDF" }
             } else {
-                require(uris.size == 1) { "Esta edicion trabaja con un solo PDF" }
+                require(uris.size == 1) { "Esta edición trabaja con un solo PDF" }
             }
             val carpeta = Archivos.carpetaSalida(context)
             val base = "Edicion_${marcaTiempo()}"
@@ -217,12 +219,9 @@ class DocumentoRepositoryImpl(
             val carpeta = Archivos.carpetaSalida(context)
             val salida = File(carpeta, "Entrega_${marcaTiempo()}.pdf")
             PdfEngine.portadaEntrega(
+                context = context,
                 nombrePlantilla = plantilla.name,
-                nombre = datos.nombre,
-                matricula = datos.matricula,
-                materia = datos.materia,
-                titulo = datos.titulo,
-                indice = datos.indice,
+                datos = datos,
                 salida = salida
             )
             registrarTodo(listOf(salida), "Modo Entrega")
@@ -240,15 +239,15 @@ class DocumentoRepositoryImpl(
                 .getOrElse { InfoPdf(0, 0f, 0f) }
 
             val chequeos = listOf(
-                Chequeo("PDF legible", info.paginas > 0, "${info.paginas} pagina(s)"),
+                Chequeo("PDF legible", info.paginas > 0, "${info.paginas} página(s)"),
                 Chequeo(
-                    "Tamano",
+                    "Tamaño",
                     archivo.tamanoBytes <= 25L * 1024L * 1024L,
-                    "${com.example.fileshifter.data.model.formatearTamano(archivo.tamanoBytes)} (limite 25 MB)"
+                    "${com.example.fileshifter.data.model.formatearTamano(archivo.tamanoBytes)} (límite 25 MB)"
                 ),
-                Chequeo("Numero de paginas", info.paginas in 1..500, "${info.paginas} de 500 maximo"),
+                Chequeo("Número de páginas", info.paginas in 1..500, "${info.paginas} de 500 máximo"),
                 Chequeo(
-                    "Dimension de pagina",
+                    "Dimensión de página",
                     info.ancho >= 200f && info.alto >= 200f,
                     "${info.ancho.toInt()} x ${info.alto.toInt()} pt"
                 )
@@ -325,28 +324,31 @@ class DocumentoRepositoryImpl(
             val salida = Archivos.nombreUnico(context, "Codigo_${marcaTiempo()}", "png")
             salida.outputStream().use { mapa.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
             mapa.recycle()
+            val copia = Archivos.publicarEnDocumentos(context, salida)
             historial.registrar(
                 nombre = salida.name,
                 ruta = salida.absolutePath,
                 operacion = if (esQr) "Generar QR" else "Generar barras",
                 tamanoBytes = salida.length(),
-                tipoMime = "image/png"
+                tipoMime = "image/png",
+                publica = copia?.uri
             )
-            Archivos.publicarEnDocumentos(context, salida)
             salida
         }
 
     private suspend fun registrarTodo(archivos: List<File>, operacion: String): Boolean {
         var publicado = false
         archivos.forEach { archivo ->
+            val copia = Archivos.publicarEnDocumentos(context, archivo)
+            if (copia != null) publicado = true
             historial.registrar(
                 nombre = archivo.name,
                 ruta = archivo.absolutePath,
                 operacion = operacion,
                 tamanoBytes = archivo.length(),
-                tipoMime = Archivos.mimeDe(archivo.name)
+                tipoMime = Archivos.mimeDe(archivo.name),
+                publica = copia?.uri
             )
-            if (Archivos.publicarEnDocumentos(context, archivo) != null) publicado = true
         }
         return publicado
     }

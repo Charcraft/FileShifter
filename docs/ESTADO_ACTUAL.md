@@ -113,6 +113,20 @@ sin tocar la UI.
 - Generación de QR y CODE-128 con ZXing.
 - Pestaña de historial de códigos y todo lo generado entra al historial.
 
+### F10 — Visor interno ✅
+
+- Cualquier archivo generado se abre dentro de la app desde el botón **Ver** de la
+  tarjeta de resultado o tocando su fila en el historial.
+- PDF con `PdfRenderer` página por página, imágenes, texto y vista previa del
+  contenido de DOCX/XLSX/PPTX; además se puede compartir o abrir con otra app.
+- El historial guarda la **copia pública** (`content://` de MediaStore) para que el
+  documento siga abriéndose aunque la app se reinstale.
+- El historial muestra una miniatura generada con `CacheVisor`; ese caché vive en
+  `cacheDir/visor`, se recorta al abrir la app y nunca se mezcla con los documentos.
+
+---
+
+
 ### F9 — Referencias bibliográficas ✅
 
 - Búsqueda en el catálogo abierto **Crossref** con Retrofit + Gson: hasta 12

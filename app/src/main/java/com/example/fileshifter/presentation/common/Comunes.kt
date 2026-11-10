@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -42,6 +43,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -70,6 +72,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -92,6 +96,7 @@ import com.example.fileshifter.ui.theme.Surface
 import com.example.fileshifter.ui.theme.SurfaceMuted
 import com.example.fileshifter.ui.theme.TextMuted
 import com.example.fileshifter.ui.theme.TextPrimary
+import com.example.fileshifter.presentation.visor.VisorActivity
 import com.example.fileshifter.ui.theme.TextSecondary
 import com.example.fileshifter.ui.theme.neumorphInset
 import com.example.fileshifter.ui.theme.neumorphRaised
@@ -433,6 +438,7 @@ fun CampoTexto(
     modifier: Modifier = Modifier,
     minLines: Int = 1,
     singleLine: Boolean = false,
+    placeholder: String = "Escribe aquí…",
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
@@ -452,7 +458,7 @@ fun CampoTexto(
         Box(Modifier.fillMaxWidth()) {
             if (valor.isEmpty()) {
                 Text(
-                    "Escribe aquí…",
+                    placeholder,
                     style = MaterialTheme.typography.bodyLarge,
                     color = TextMuted
                 )
@@ -476,7 +482,7 @@ fun CampoTexto(
 fun MenuTresPuntos(contenido: @Composable ColumnScope.() -> Unit) {
     var abierto by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { abierto = true }, modifier = Modifier.size(40.dp)) {
+        IconButton(onClick = { abierto = true }, modifier = Modifier.size(48.dp)) {
             Icon(Icons.Filled.MoreVert, contentDescription = "Más opciones", tint = TextSecondary)
         }
         DropdownMenu(expanded = abierto, onDismissRequest = { abierto = false }) {
@@ -634,17 +640,37 @@ fun TarjetaResultado(
                 Text(
                     resultado.mensaje,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = TextSecondary,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                 )
             }
         }
         resultado.archivos.take(4).forEach { ruta ->
-            Spacer(Modifier.height(6.dp))
-            Text(
-                File(ruta).name,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextMuted
-            )
+            Spacer(Modifier.height(2.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    File(ruta).name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(
+                    onClick = { VisorActivity.abrir(contexto, ruta, File(ruta).name) },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                    modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.Visibility,
+                        contentDescription = null,
+                        tint = Primary,
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text("Ver", color = Primary)
+                }
+            }
         }
         Spacer(Modifier.height(10.dp))
         FlowRow(
@@ -654,26 +680,31 @@ fun TarjetaResultado(
             if (resultado.archivos.isNotEmpty()) {
                 TextButton(
                     onClick = { compartirArchivo(contexto, resultado.archivos.first()) },
-                    contentPadding = PaddingValues(0.dp)
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                 ) { Text("Compartir", color = Primary) }
             }
             if (mostrarCorrector) {
-                TextButton(onClick = onCorregir!!, contentPadding = PaddingValues(0.dp)) {
+                TextButton(onClick = onCorregir!!, contentPadding = PaddingValues(horizontal = 8.dp),
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
                     Text("Corregir", color = Primary)
                 }
             }
             if (mostrarEntrega) {
-                TextButton(onClick = onEntrega!!, contentPadding = PaddingValues(0.dp)) {
+                TextButton(onClick = onEntrega!!, contentPadding = PaddingValues(horizontal = 8.dp),
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
                     Text("Entrega", color = Primary)
                 }
             }
             if (mostrarValidador) {
-                TextButton(onClick = onValidar!!, contentPadding = PaddingValues(0.dp)) {
+                TextButton(onClick = onValidar!!, contentPadding = PaddingValues(horizontal = 8.dp),
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
                     Text("Validar", color = Primary)
                 }
             }
             if (onInicio != null) {
-                TextButton(onClick = onInicio, contentPadding = PaddingValues(0.dp)) {
+                TextButton(onClick = onInicio, contentPadding = PaddingValues(horizontal = 8.dp),
+                    modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
                     Text("Inicio", color = TextMuted)
                 }
             }

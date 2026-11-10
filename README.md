@@ -45,7 +45,7 @@ Evidencias de la ejecución en el teléfono: **[docs/evidencias](docs/evidencias
 | F4 | Corrector ortográfico offline (tildes, repeticiones, errores frecuentes) | 🟡 básico |
 | F5 | Modo Entrega (3 plantillas, formulario, vista previa, PDF) | 🟡 sin importar plantilla |
 | F6 | Validador con semáforo, SHA-256 y QR | ✅ |
-| F7 | Escáner con cámara + OCR + PDF | 🟡 sin detección de bordes |
+| F7 | Escáner con detección de bordes, corrección de perspectiva, filtros de escaneo, OCR y PDF | ✅ |
 | F8 | QR / barras (leer, generar, historial y abrir el enlace leído) | ✅ |
 | F9 | **Referencias bibliográficas** (Crossref, cita APA y respaldo offline) | ✅ |
 
@@ -201,6 +201,7 @@ lectura del QR con ML Kit).
 | `ConversionE2ETest` | 7 | DOCX, TXT, HTML y CSV a PDF; PDF a TXT y a DOCX; varios archivos |
 | `FlujoDocumentosE2ETest` | 6 | Imagen a PDF, guardado en Documentos, historial, validador, QR y barras |
 | `NavegacionE2ETest` | 6 | Bienvenida, inicio y apertura de cada herramienta |
+| `VisorE2ETest` | 7 | Miniaturas, caché, copia pública en el historial y dibujo del PDF en el visor |
 | `PdfEngineTest` | 5 | Unir, dividir, rotar, marca de agua, rangos de páginas |
 | `FormatosTest` (JVM) | 4 | Matriz de conversiones que ofrece la pantalla |
 
@@ -216,6 +217,42 @@ Todo lo que genera la app se escribe en su carpeta privada y además se publica 
 **`Documentos/FileShifter`**, para que el archivo se vea desde el explorador, se
 pueda adjuntar a un correo o abrir con Word. En Android 10 o superior se usa
 MediaStore, así que no hacen falta permisos de almacenamiento.
+
+## Visor y caché
+
+Cada documento generado se puede abrir dentro de la app, desde el botón **Ver**
+de la tarjeta de resultado o tocando cualquier fila del historial:
+
+| Tipo | Cómo se muestra |
+| --- | --- |
+| PDF | Página por página con `PdfRenderer`, desplazable |
+| Imagen (PNG, JPG, WebP) | Vista completa a lo ancho |
+| TXT, CSV, HTML | Texto seleccionable |
+| DOCX, XLSX, PPTX | Vista previa del texto extraído + «Abrir con» |
+
+Desde el visor se puede compartir el archivo o abrirlo con otra aplicación.
+
+El historial usa una **caché propia en `cacheDir/visor`** para mostrar la
+miniatura del documento (primera página del PDF o la foto reducida). Esa caché:
+
+- nunca se mezcla con los documentos del usuario;
+- se puede borrar sin perder nada: la miniatura se regenera del original;
+- se recorta sola al abrir la app (más de 7 días o más de 40 MB).
+
+La ruta privada se usa solo para leer rápido y para procesar; la copia que
+sobrevive a una desinstalación es la de `Documentos/FileShifter`, y es la que
+guarda el historial para abrir el documento después.
+
+## Accesibilidad
+
+- Todas las acciones con solo icono tienen descripción para TalkBack.
+- Las tarjetas de herramienta usan altura mínima, así que el texto no se corta
+  con el tamaño de letra grande del sistema.
+- Los mensajes de resultado se anuncian como región activa al terminar.
+- Los botones de acción mantienen un área táctil de 48 dp.
+- El color de texto secundario se oscureció para pasar el contraste AA sobre el
+  fondo claro de la app.
+
 
 ---
 

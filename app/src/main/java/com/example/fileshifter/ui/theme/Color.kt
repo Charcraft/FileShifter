@@ -19,7 +19,7 @@ val Border = Color(0xFFE3EDF5)
 val Outline = Color(0xFFA9BACB)
 val TextPrimary = Color(0xFF0B2540)
 val TextSecondary = Color(0xFF64778C)
-val TextMuted = Color(0xFF8DA0B3)
+val TextMuted = Color(0xFF5B6A7C)
 
 val Amber = Color(0xFFF59E0B)
 val AmberBg = Color(0xFFFDF3D8)

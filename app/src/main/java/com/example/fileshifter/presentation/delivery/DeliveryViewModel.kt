@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fileshifter.data.model.DatosEntrega
 import com.example.fileshifter.data.model.PlantillaEntrega
+import com.example.fileshifter.data.model.PosicionLogo
 import com.example.fileshifter.data.model.ResultadoConversion
 import com.example.fileshifter.data.repository.DocumentoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,11 +31,38 @@ class DeliveryViewModel(private val repositorio: DocumentoRepository) : ViewMode
         _estado.update { it.copy(plantilla = plantilla, resultado = null) }
     }
 
-    fun onNombre(valor: String) = actualizar { it.copy(nombre = valor) }
-    fun onMatricula(valor: String) = actualizar { it.copy(matricula = valor) }
+    fun onInstitucion(valor: String) = actualizar { it.copy(institucion = valor) }
+    fun onCarrera(valor: String) = actualizar { it.copy(carrera = valor) }
     fun onMateria(valor: String) = actualizar { it.copy(materia = valor) }
     fun onTitulo(valor: String) = actualizar { it.copy(titulo = valor) }
+    fun onNombre(valor: String) = actualizar { it.copy(nombre = valor) }
+    fun onMatricula(valor: String) = actualizar { it.copy(matricula = valor) }
+    fun onDocente(valor: String) = actualizar { it.copy(docente = valor) }
+    fun onFecha(valor: String) = actualizar { it.copy(fecha = valor) }
+    fun onTextoExtra(valor: String) = actualizar { it.copy(textoExtra = valor) }
     fun onIndice(valor: String) = actualizar { it.copy(indice = valor) }
+
+    fun onLogo(uri: String?) {
+        _estado.update {
+            it.copy(
+                datos = it.datos.copy(
+                    logoUri = uri,
+                    posicionLogo = when {
+                        uri == null -> PosicionLogo.NINGUNA
+                        it.datos.posicionLogo == PosicionLogo.NINGUNA -> PosicionLogo.SUPERIOR_IZQUIERDA
+                        else -> it.datos.posicionLogo
+                    }
+                ),
+                resultado = null
+            )
+        }
+    }
+
+    fun onPosicionLogo(posicion: PosicionLogo) {
+        _estado.update {
+            it.copy(datos = it.datos.copy(posicionLogo = posicion), resultado = null)
+        }
+    }
 
     fun generar() {
         val actual = _estado.value

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -187,14 +188,14 @@ private fun TarjetaHerramienta(
     Card(
         onClick = onClick,
         modifier = modifier
-            .height(122.dp)
+            .heightIn(min = 122.dp)
             .neumorphRaised(corner = 16.dp, elevacion = 6.dp, fondo = Surface),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),
         border = null,
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
-        Column(Modifier.fillMaxSize().padding(10.dp)) {
+        Column(Modifier.fillMaxWidth().padding(10.dp)) {
             ChipIcono(herramienta.icono, tamano = 38.dp)
             Spacer(Modifier.height(8.dp))
             Text(

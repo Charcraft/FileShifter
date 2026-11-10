@@ -10,6 +10,7 @@ import com.example.fileshifter.data.repository.HistorialRepository
 import com.example.fileshifter.data.repository.ReferenciasRepository
 import com.example.fileshifter.data.repository.ReferenciasRepositoryImpl
 import com.example.fileshifter.data.source.OcrService
+import com.example.fileshifter.data.source.CacheVisor
 import com.example.fileshifter.data.source.Archivos
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import java.io.File
@@ -22,6 +23,8 @@ class FileShifterApp : Application() {
         super.onCreate()
         PDFBoxResourceLoader.init(applicationContext)
         container = AppContainer(this)
+        // El cache del visor es desechable: se recorta al abrir la app.
+        CacheVisor.limpiar(this)
     }
 }
 

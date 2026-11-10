@@ -78,7 +78,7 @@ object OfficeWriter {
 <w:name w:val="Normal"/><w:rPr><w:sz w:val="22"/></w:rPr>
 </w:style>
 <w:style w:type="paragraph" w:styleId="Titulo">
-<w:name w:val="Titulo"/><w:basedOn w:val="Normal"/>
+<w:name w:val="Título"/><w:basedOn w:val="Normal"/>
 <w:rPr><w:b/><w:sz w:val="32"/></w:rPr>
 </w:style>
 </w:styles>"""

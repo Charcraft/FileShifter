@@ -19,9 +19,9 @@ data class Referencia(
     }
 
     fun tipoLegible(): String = when (tipo) {
-        "journal-article" -> "Articulo"
+        "journal-article" -> "Artículo"
         "book" -> "Libro"
-        "book-chapter" -> "Capitulo"
+        "book-chapter" -> "Capítulo"
         "proceedings-article" -> "Congreso"
         "dissertation" -> "Tesis"
         "report" -> "Informe"
